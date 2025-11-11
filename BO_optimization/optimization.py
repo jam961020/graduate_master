@@ -464,26 +464,32 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     X_init = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * X_init
 
     # 초기 샘플링: 각 x에 대해 w_set 평가
-    train_X = []
+    train_X_params = []  # x만 저장 (9D)
+    train_X_full = []    # (x, w) concat (15D)
     train_Y = []
+    init_w_indices_list = []  # 각 초기 샘플의 w_indices 저장
 
     for i, x in enumerate(X_init):
         # w_set 샘플링 (초기에는 고정된 seed 사용)
         w_set, w_indices = sample_w_set(all_env_features, n_w=n_w, seed=i)
+        init_w_indices_list.append(w_indices)
 
         # w_set에 대해서만 평가
         scores = evaluate_on_w_set(x.unsqueeze(0), images_data, yolo_detector, w_indices)
 
-        # 각 x를 n_w번 복제 (BoRisk 구조)
+        # 각 (x, w) 쌍을 만들어서 저장
         for j in range(n_w):
-            train_X.append(x.clone())
+            x_w = torch.cat([x, w_set[j]])  # [9+6=15]
+            train_X_full.append(x_w)
+            train_X_params.append(x.clone())
         train_Y.append(scores)
 
         cvar = compute_cvar_from_scores(scores.squeeze(-1), alpha)
         print(f"Init {i+1}/{n_initial}: CVaR={cvar:.4f}, mean={scores.mean():.4f}")
 
-    train_X = torch.stack(train_X)  # [n_initial * n_w, 9]
-    train_Y = torch.cat(train_Y)    # [n_initial * n_w, 1]
+    train_X_full = torch.stack(train_X_full)      # [n_initial * n_w, 15]
+    train_X_params = torch.stack(train_X_params)  # [n_initial * n_w, 9]
+    train_Y = torch.cat(train_Y)                  # [n_initial * n_w, 1]
 
     # ===== Phase 2: Y 값 정규화 =====
     Y_mean = train_Y.mean()
@@ -501,19 +507,16 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     print(f"  mean={Y_mean:.4f}, std={Y_std:.4f}")
     print(f"  min={train_Y.min().item():.4f}, max={train_Y.max().item():.4f}")
 
-    # ===== Phase 3: w_set 샘플링 (첫 iteration용) =====
-    w_set, w_indices = sample_w_set(all_env_features, n_w=n_w)
-
-    # ===== Phase 4: GP 모델 생성 (BoRisk 구조!) =====
+    # ===== Phase 3: GP 모델 생성 (BoRisk 구조!) =====
     print(f"\n[Phase 3] GP model initialization")
-    print(f"  - Input: x only [9D]")
-    print(f"  - AppendFeatures: w_set [{n_w}, 6D]")
+    print(f"  - Input: (x, w) concat [15D = 9D params + 6D env]")
     print(f"  - GP learns: (x, w) → y")
+    print(f"  - train_X_full shape: {train_X_full.shape}")
+    print(f"  - train_Y shape: {train_Y_normalized.shape}")
 
     gp = SingleTaskGP(
-        train_X,                      # [N*n_w, 9] params만
-        train_Y_normalized,           # [N*n_w, 1] 정규화된 Y
-        input_transform=AppendFeatures(feature_set=w_set)  # w_set 자동 추가!
+        train_X_full,         # [N*n_w, 15] (x,w) concat
+        train_Y_normalized    # [N*n_w, 1] 정규화된 Y
     )
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
     fit_gpytorch_mll(mll)
@@ -540,41 +543,110 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         # 5.1: 새로운 w_set 샘플링 (매 iteration마다)
         w_set, w_indices = sample_w_set(all_env_features, n_w=n_w)
 
-        # 5.2: qMFKG 획득 함수 생성 (BoRisk의 핵심!)
+        # 5.2: qMFKG 획득 함수 (BoRisk의 핵심!)
         try:
-            # CVaR objective 래핑
-            cvar_obj = GenericMCObjective(lambda samples: cvar_objective(samples, alpha))
+            # GP를 15D 입력에 맞게 래핑
+            # w_set의 평균 w를 사용해서 9D → 15D 변환
+            w_mean = w_set.mean(dim=0)  # [6]
 
-            # qMFKG: Knowledge Gradient with fantasies
-            acq_func = qMultiFidelityKnowledgeGradient(
-                model=gp,
-                num_fantasies=64,  # 판타지 샘플 개수
+            # CVaR objective
+            def cvar_objective_for_acqf(samples, X=None):
+                # samples: [n_fantasies, batch_size, n_w, 1]
+                # CVaR 계산: worst alpha%의 평균
+                if samples.dim() == 4:
+                    samples = samples.squeeze(-1)  # [n_fantasies, batch_size, n_w]
+                    n_w_dim = samples.shape[-1]
+                    n_worst = max(1, int(n_w_dim * alpha))
+                    worst, _ = torch.topk(samples, n_worst, dim=-1, largest=False)
+                    return worst.mean(dim=-1)  # [n_fantasies, batch_size]
+                else:
+                    # 다른 형태인 경우 그대로 반환
+                    return samples.mean(dim=-1)
+
+            cvar_obj = GenericMCObjective(cvar_objective_for_acqf)
+
+            # 9D input용 래퍼 GP 생성
+            # 내부에서 w_mean을 자동으로 추가
+            class GPWrapper:
+                def __init__(self, base_gp, w_mean):
+                    self.base_gp = base_gp
+                    self.w_mean = w_mean
+
+                def posterior(self, X):
+                    # X: [batch, 9]
+                    # w_mean을 추가해서 [batch, 15]로 변환
+                    if X.dim() == 1:
+                        X = X.unsqueeze(0)
+
+                    batch_size = X.shape[0]
+                    w_expanded = self.w_mean.unsqueeze(0).expand(batch_size, -1)
+                    X_full = torch.cat([X, w_expanded], dim=-1)
+                    return self.base_gp.posterior(X_full)
+
+                def __call__(self, X):
+                    # For BoTorch compatibility
+                    batch_size = X.shape[0]
+                    w_expanded = self.w_mean.unsqueeze(0).expand(batch_size, -1)
+                    X_full = torch.cat([X, w_expanded], dim=-1)
+                    return self.base_gp(X_full)
+
+            gp_wrapper = GPWrapper(gp, w_mean)
+
+            # qMFKG 획득 함수
+            acqf = qMultiFidelityKnowledgeGradient(
+                model=gp_wrapper,
+                num_fantasies=16,  # 판타지 샘플 수
                 objective=cvar_obj,
-                project=lambda X: X[..., :9]  # w 제거, x만 반환
+                project=lambda X: X[..., :9]  # 이미 9D이므로 그대로
             )
 
             # 획득 함수 최적화
             candidate, acq_value = optimize_acqf(
-                acq_func,
+                acqf,
                 bounds=BOUNDS,
                 q=1,
-                num_restarts=10,
-                raw_samples=512
+                num_restarts=5,
+                raw_samples=256
             )
             acq_name = "qMFKG"
 
         except Exception as e:
             print(f"\n⚠️ qMFKG failed: {e}, falling back to UCB...")
-            # 폴백: UCB
-            acq_func = qUpperConfidenceBound(gp, beta=2.0)
-            candidate, acq_value = optimize_acqf(
-                acq_func,
-                bounds=BOUNDS,
-                q=1,
-                num_restarts=10,
-                raw_samples=512
-            )
-            acq_name = "UCB"
+            import traceback
+            traceback.print_exc()
+
+            # 폴백: UCB with manual w addition
+            try:
+                # UCB로 폴백
+                candidates = torch.rand(100, 9, dtype=DTYPE, device=DEVICE)
+                candidates = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * candidates
+
+                best_idx = 0
+                best_score = -float('inf')
+                for i in range(100):
+                    x = candidates[i]
+                    x_w_list = []
+                    for w in w_set:
+                        x_w_list.append(torch.cat([x, w]).unsqueeze(0))
+                    X_full = torch.cat(x_w_list, dim=0)
+
+                    with torch.no_grad():
+                        posterior = gp.posterior(X_full)
+                        score = posterior.mean.mean().item()
+
+                    if score > best_score:
+                        best_score = score
+                        best_idx = i
+
+                candidate = candidates[best_idx].unsqueeze(0)
+                acq_value = torch.tensor(best_score)
+                acq_name = "UCB-fallback"
+            except Exception as e2:
+                print(f"\n⚠️ UCB also failed: {e2}")
+                candidate = torch.rand(1, 9, dtype=DTYPE, device=DEVICE)
+                candidate = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * candidate
+                acq_value = torch.tensor(0.0)
+                acq_name = "Random"
 
         # 5.3: w_set에서만 평가 (BoRisk의 핵심!)
         new_scores = evaluate_on_w_set(candidate, images_data, yolo_detector, w_indices)
@@ -608,20 +680,21 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         with open(log_file, 'w') as f:
             json.dump(iter_log, f, indent=2)
 
-        # 5.6: 데이터 추가 (x를 n_w번 복제)
+        # 5.6: 데이터 추가 (각 (x, w) 쌍 추가)
         for j in range(n_w):
-            train_X = torch.cat([train_X, candidate])
+            x_w = torch.cat([candidate[0], w_set[j]]).unsqueeze(0)
+            train_X_full = torch.cat([train_X_full, x_w])
+            train_X_params = torch.cat([train_X_params, candidate])
         train_Y = torch.cat([train_Y, new_scores])
         train_Y_normalized = torch.cat([train_Y_normalized, new_scores_normalized])
 
         best_cvar_history.append(new_cvar)
 
-        # 5.7: GP 재학습 (AppendFeatures with new w_set)
+        # 5.7: GP 재학습
         try:
             gp = SingleTaskGP(
-                train_X,
-                train_Y_normalized,
-                input_transform=AppendFeatures(feature_set=w_set)
+                train_X_full,
+                train_Y_normalized
             )
             mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
             fit_gpytorch_mll(mll)
@@ -630,9 +703,8 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
             # 노이즈 추가 후 재시도
             train_Y_normalized = train_Y_normalized + 0.01 * torch.randn_like(train_Y_normalized)
             gp = SingleTaskGP(
-                train_X,
-                train_Y_normalized,
-                input_transform=AppendFeatures(feature_set=w_set)
+                train_X_full,
+                train_Y_normalized
             )
             mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
             fit_gpytorch_mll(mll)
@@ -660,7 +732,7 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     else:
         # BO iteration
         bo_idx = best_idx - n_initial
-        best_X = train_X[n_initial * n_w + bo_idx * n_w]  # 첫 번째 w에서의 x
+        best_X = train_X_params[n_initial * n_w + bo_idx * n_w]  # 첫 번째 w에서의 x
 
     print("\n" + "="*60)
     print("BoRisk Optimization Complete")

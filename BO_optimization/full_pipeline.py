@@ -269,6 +269,9 @@ def detect_lines_in_roi(roi_bgr_enhanced, roi_gray_enhanced, params):
         lines_by_algo["AirLine_QG"] = run_airline(roi_bgr_enhanced, airline_preset_QG)
     except Exception as e:
         print(f"  [WARN] AirLine failed: {e}")
+        # Segfault는 여기서 잡히지 않지만, Python exception은 처리
+        import traceback
+        traceback.print_exc()
         lines_by_algo["AirLine_Q"] = np.empty((0, 4))
         lines_by_algo["AirLine_QG"] = np.empty((0, 4))
     
