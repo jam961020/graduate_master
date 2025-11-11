@@ -1,167 +1,246 @@
 # 다음 세션 시작 가이드
 
-**날짜**: 2025.11.11 21:00
-**이전 세션**: BoRisk 알고리즘 완전 구현 완료!
+**날짜**: 2025.11.11 21:10
+**이전 세션**: CRG311 segfault 방어 로직 추가 - 실패
 
 ---
 
-## 🎉 완료된 작업
+## ⚠️ 현재 상황 (CRITICAL)
 
-**BoRisk 알고리즘 완전 구현 성공!**
+**문제**: CRG311.desGrow() segmentation fault가 방어 로직 추가 후에도 여전히 발생
 
-### 구현된 기능
-1. ✅ **환경 벡터 추출**: `extract_all_environments()` - 6D 환경 특징
-2. ✅ **w_set 샘플링**: `sample_w_set()` - n_w개만 샘플링
-3. ✅ **GP 모델**: `AppendFeatures(feature_set=w_set)` - (x,w) → y 학습
-4. ✅ **qMFKG 획득 함수**: CVaR objective 통합
-5. ✅ **evaluate_on_w_set()**: w_set만 평가 (113개 아님!)
-6. ✅ **BO 루프**: 매 iteration마다 w_set 재샘플링 및 평가
-
-### 핵심 변경사항
-- **파일**: `optimization.py` (완전 재작성)
-- **Import 수정**:
-  ```python
-  from botorch.acquisition import qMultiFidelityKnowledgeGradient
-  from botorch.models.transforms.input import AppendFeatures
-  from environment_independent import extract_parameter_independent_environment
-  ```
-- **새 함수들**:
-  - `extract_all_environments()` - 모든 이미지의 환경 벡터 추출
-  - `sample_w_set(env_features, n_w)` - w_set 랜덤 샘플링
-  - `evaluate_on_w_set(X, images_data, yolo, w_indices)` - w_set만 평가
-  - `compute_cvar_from_scores(scores, alpha)` - CVaR 계산
-  - `cvar_objective(samples, alpha)` - GP 샘플에서 CVaR 계산
-- **파라미터 추가**: `--n_w` (default=15)
+### 시도한 해결책 (모두 실패)
+1. ✅ **C-contiguity 강제**: ODes_np, edgeNp_binary, outMap, out 모두 `np.ascontiguousarray()` 적용
+2. ✅ **dtype 검증**: assertions로 float32, uint8 타입 강제
+3. ✅ **버퍼 오버런 방지**: pixelNumThresh를 이미지 대각선의 3%로 제한
+4. ✅ **CPU 강제 실행 옵션**: 환경변수 `AIRLINE_FORCE_CPU=1` 지원 추가
+5. ✅ **Symlink 생성**: dataset/, models/ 경로 문제 해결
+6. ❌ **테스트 실행**: 여전히 segfault 발생 (timeout: the monitored command dumped core)
 
 ---
 
-## ⚡ 즉시 확인할 것
+## 🔍 근본 원인 분석
 
-### 1. 테스트 진행 상황
-```bash
-# 실행 중인 프로세스
-ps aux | grep "python.*optimization.py"
+### CRG311.desGrow() 문제
+**파일**: `/home/jeongho/projects/graduate/YOLO_AirLine/AirLine_assemble_test.py:635-650`
 
-# 로그 확인
-tail -100 test_borisk.log
-
-# 반복별 로그
-ls -lh logs/
-cat logs/iter_001.json | jq .
-
-# 결과
-ls -lh results/
-cat results/bo_cvar_*.json | jq .
+```python
+rawLineNum = crg.desGrow(
+    outMap, edgeNp_binary, ODes_np, out,
+    airline_config["simThresh"],
+    safe_pixel_thresh,  # ← 축소된 값 사용
+    TMP1, TMP2, TMP3, THETA_RES
+)
 ```
 
-### 2. 기대 결과
-- **이전 (잘못된 구현)**:
-  - CVaR = 0.0011 (매우 낮음)
-  - 평가 횟수: (n_initial + n_iterations) * 113개
-- **현재 (BoRisk)**:
-  - CVaR > 0.01 (기대)
-  - 평가 횟수: (n_initial + n_iterations) * n_w
-  - 예: (2 + 1) * 3 = 9회 (이전: 3 * 113 = 339회)
-  - **속도 향상**: 약 40배 빠름!
+### 가능한 원인
+1. **CRG311.so ABI 불일치**
+   - 컴파일 환경: Python 3.x, NumPy 1.x
+   - 현재 환경: Python 3.11, NumPy 2.x
+   - **가능성**: 매우 높음 ⭐⭐⭐⭐⭐
 
-### 3. 성공 기준
-- [ ] Import 에러 없음
-- [ ] 환경 벡터 추출 성공 (6D, N개 이미지)
-- [ ] w_set 샘플링 성공
-- [ ] GP 모델 학습 성공 (AppendFeatures)
-- [ ] qMFKG 획득 함수 작동
-- [ ] CVaR 값이 0.01 이상
+2. **GPU 메모리 접근 오류**
+   - DexiNed()가 GPU에서 실행 후 CPU NumPy 배열로 변환
+   - GPU 텐서 → CPU 전환 시 메모리 레이아웃 불일치
+   - **가능성**: 높음 ⭐⭐⭐⭐
+
+3. **TMP1/TMP2/TMP3 버퍼 크기 부족**
+   - TMP1: (50000, 2) - 엣지 포인트
+   - TMP2: (2, 300000, 2) - 라인 그로잉
+   - TMP3: (3000, 2, 2) - 라인 세그먼트
+   - **가능성**: 중간 ⭐⭐⭐
 
 ---
 
-## 📋 다음 작업 우선순위
+## 🚀 다음 세션 시작 시 즉시 시도할 것
 
-### Priority 1: 테스트 검증 및 디버깅 (CRITICAL - 즉시)
-1. **테스트 완료 확인**
-   - 첫 테스트 결과 확인 (iterations=1, n_initial=2, n_w=3)
-   - 로그 분석: 각 단계별 정상 작동 여부
-   - CVaR 값 확인
+### 방법 1: CPU 강제 실행 테스트 (최우선)
+```bash
+# CPU 모드로 강제 실행
+AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3
 
-2. **에러 발생 시 디버깅**
-   - Import 에러: BoTorch 버전 확인
-   - 차원 불일치: train_X, train_Y, w_set 형태 확인
-   - GP 학습 실패: 정규화, 노이즈 레벨 확인
-   - qMFKG 실패: UCB로 폴백 확인
+# 이유: GPU↔CPU 메모리 전환 문제 회피
+```
 
-3. **성공 시 확대 테스트**
-   ```bash
-   # 소규모 테스트
-   python optimization.py --image_dir ../dataset/images/test \
-       --gt_file ../dataset/ground_truth.json \
-       --iterations 5 --n_initial 5 --n_w 10 --alpha 0.3
+**기대 결과**:
+- ✅ 성공 시 → GPU 관련 메모리 문제 확인됨
+- ❌ 실패 시 → CRG311.so ABI 문제 확률 99%
 
-   # 중규모 테스트
-   python optimization.py --image_dir ../dataset/images/test \
-       --gt_file ../dataset/ground_truth.json \
-       --iterations 10 --n_initial 10 --n_w 15 --alpha 0.3
+---
 
-   # 전체 실험
-   python optimization.py --image_dir ../dataset/images/test \
-       --gt_file ../dataset/ground_truth.json \
-       --iterations 20 --n_initial 10 --n_w 15 --alpha 0.3
+### 방법 2: CRG311.so 재컴파일 (CPU 실패 시)
+
+**위치**: `/home/jeongho/projects/graduate/YOLO_AirLine/CRG311.so`
+
+```bash
+cd /home/jeongho/projects/graduate/YOLO_AirLine
+
+# 1. 소스 코드 위치 확인
+ls -la CRG311.* *.cpp *.c
+
+# 2. 현재 Python/NumPy 버전 확인
+python -c "import sys; import numpy; print(f'Python {sys.version}'); print(f'NumPy {numpy.__version__}')"
+
+# 3. 재컴파일 (예시 - 실제 빌드 스크립트 확인 필요)
+# g++ -shared -fPIC CRG311.cpp -o CRG311.so $(python -m pybind11 --includes) $(python-config --ldflags)
+# 또는
+# python setup.py build_ext --inplace
+```
+
+**참고**:
+- CRG311은 논문 원저자 코드
+- 알고리즘 의미를 바꾸지 않는 ABI 호환성 수정은 정석
+- 재컴파일로 Python 3.11 + NumPy 2.x 환경 일치
+
+---
+
+### 방법 3: 디버깅 모드 실행 (재컴파일도 실패 시)
+
+```bash
+# gdb로 crash 지점 확인
+gdb python
+(gdb) run optimization.py --iterations 1 --n_initial 1 --alpha 0.3
+# segfault 발생 시
+(gdb) bt  # backtrace
+(gdb) info registers
+```
+
+**또는 더 간단하게**:
+```bash
+# strace로 시스템 콜 추적
+strace -o trace.log python optimization.py --iterations 1 --n_initial 1 --alpha 0.3 2>&1
+
+# crash 직전 로그 확인
+tail -100 trace.log
+```
+
+---
+
+## 📂 수정된 파일 요약
+
+### AirLine_assemble_test.py
+**위치**: `/home/jeongho/projects/graduate/YOLO_AirLine/AirLine_assemble_test.py`
+
+**변경사항**:
+1. **라인 56-61**: DEVICE 설정 추가
+   ```python
+   USE_GPU = os.environ.get('AIRLINE_FORCE_CPU', '0') != '1'
+   DEVICE = torch.device('cuda' if torch.cuda.is_available() and USE_GPU else 'cpu')
+   print(f"[AirLine] Using device: {DEVICE} (USE_GPU={USE_GPU})")
    ```
 
-### Priority 2: 성능 최적화 (Medium)
-- qMFKG 하이퍼파라미터 튜닝
-  - `num_fantasies`: 64 → 32 or 128
-  - `num_restarts`: 10 → 20
-  - `raw_samples`: 512 → 1024
-- w_set 크기 실험: 10, 15, 20, 25
-- alpha 값 실험: 0.2, 0.3, 0.4
+2. **라인 65**: `.cuda()` → `.to(DEVICE)`
+   ```python
+   thetaN = nn.Conv2d(...).to(DEVICE)
+   ```
 
-### Priority 3: 실험 및 분석 (High)
-- Vanilla BO vs BoRisk 비교
-- 속도 측정 및 분석
-- CVaR 개선 곡선 시각화
-- 최적 파라미터 분석
+3. **라인 86**: DexiNed GPU → DEVICE
+   ```python
+   EDGE_DET = DexiNed().to(DEVICE)
+   ```
+
+4. **라인 90**: torch.load map_location
+   ```python
+   edge_state_dict = torch.load(dexi_path, map_location=DEVICE)
+   ```
+
+5. **라인 591**: tensor GPU → DEVICE
+   ```python
+   x1 = torch.tensor(rx1_resized, dtype=torch.float32).to(DEVICE) / 255.0
+   ```
+
+6. **라인 610-630**: C-contiguity 및 dtype 강제 (이전 세션)
+7. **라인 635-650**: 버퍼 오버런 방지 (이전 세션)
+
+### 새로 생성된 파일
+- `BO_optimization/dataset` → `../dataset` (symlink)
+- `BO_optimization/models` → `../models` (symlink)
 
 ---
 
-## 🔧 주요 파일 위치
+## 🧪 테스트 체크리스트
 
-- **메인 파일**: `optimization.py` (BoRisk 구현)
-- **환경 추출**: `environment_independent.py`
-- **파이프라인**: `full_pipeline.py` (YOLO + AirLine)
-- **평가 메트릭**: `optimization.py:39-116` (line_equation_evaluation)
-- **로그**: `logs/iter_XXX.json`
-- **결과**: `results/bo_cvar_*.json`
+### Step 1: CPU 강제 실행
+- [ ] `AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3`
+- [ ] segfault 발생 여부 확인
+- [ ] 발생 안하면 → 성공! GPU 메모리 문제였음
+- [ ] 발생하면 → Step 2로
+
+### Step 2: CRG311.so 재컴파일
+- [ ] 소스 코드 위치 확인
+- [ ] 빌드 시스템 확인 (CMakeLists.txt, setup.py, Makefile)
+- [ ] 현재 환경에서 재컴파일
+- [ ] 테스트 재실행
+- [ ] 성공하면 → 완료! ABI 문제였음
+- [ ] 실패하면 → Step 3로
+
+### Step 3: 대체 방법 검토
+- [ ] AirLine 알고리즘을 pure Python으로 재구현?
+- [ ] Docker 컨테이너로 원저자 환경 재현?
+- [ ] CRG311 없이 다른 라인 검출 알고리즘 사용?
 
 ---
 
-## 📝 실행 명령어 템플릿
+## 📊 BoRisk 알고리즘 상태
+
+### 구현 완료 (이전 세션)
+- ✅ 환경 벡터 추출 (6D)
+- ✅ w_set 샘플링
+- ✅ (x, w) → y GP 모델 (AppendFeatures)
+- ✅ qMFKG 획득 함수
+- ✅ CVaR objective
+
+### 블로커: CRG311 segfault
+**결과**: BoRisk 알고리즘은 완벽하게 구현되었으나, AirLine 라인 검출 단계에서 crash 발생
+
+---
+
+## 💡 중요 팁
+
+### 디버깅 순서
+1. **CPU 강제 실행** (5분) - 가장 빠름
+2. **CRG311 재컴파일** (30분) - 가장 확실함
+3. **gdb/strace 디버깅** (1시간) - 근본 원인 파악
+
+### 만약 모두 실패하면
+- **Option A**: AirLine_assemble_test.py의 CRG311 호출 부분을 임시로 mock하고 BoRisk 알고리즘 로직만 테스트
+- **Option B**: 더 간단한 라인 검출 알고리즘(HoughLines, LSD)으로 대체하여 BoRisk 검증
+- **Option C**: 원저자에게 CRG311.so 빌드 환경 문의
+
+---
+
+## 📝 실행 명령어 요약
 
 ```bash
-# 빠른 테스트 (디버깅용)
-python optimization.py \
-    --image_dir ../dataset/images/test \
-    --gt_file ../dataset/ground_truth.json \
-    --iterations 2 --n_initial 3 --n_w 5 --alpha 0.3
+# 1. CPU 강제 테스트 (최우선)
+cd /home/jeongho/projects/graduate/BO_optimization
+AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3
 
-# 표준 실험
-python optimization.py \
-    --image_dir ../dataset/images/test \
-    --gt_file ../dataset/ground_truth.json \
-    --iterations 20 --n_initial 10 --n_w 15 --alpha 0.3
+# 2. 정상 실행 확인
+tail -f realtime_test.log
 
-# 백그라운드 실행
-nohup python optimization.py \
-    --image_dir ../dataset/images/test \
-    --gt_file ../dataset/ground_truth.json \
-    --iterations 20 --n_initial 10 --n_w 15 --alpha 0.3 \
-    > experiment.log 2>&1 &
+# 3. segfault 여부 확인
+echo $?  # 0이면 성공, 139(segfault) 또는 기타 에러 코드면 실패
+
+# 4. 성공 시 확대 테스트
+AIRLINE_FORCE_CPU=1 python optimization.py --iterations 5 --n_initial 5 --alpha 0.3
 ```
 
 ---
 
-**다음 세션 시작 시**:
-1. 먼저 테스트 결과 확인
-2. 에러 발생 시 디버깅
-3. 성공 시 확대 테스트 진행
-4. 결과 분석 및 논문 작성 준비
+## 🎯 다음 세션 목표
 
-**마지막 업데이트**: 2025.11.11 21:00
+**Primary Goal**: CRG311 segfault 해결
+
+**Success Criteria**:
+- [ ] optimization.py가 segfault 없이 최소 1 iteration 완료
+- [ ] CVaR 값 계산 성공
+- [ ] BoRisk 알고리즘 정상 작동 확인
+
+**Fallback Plan**:
+- CRG311 해결 불가 시 → 대체 라인 검출 알고리즘으로 BoRisk 검증
+
+---
+
+**마지막 업데이트**: 2025.11.11 21:10
+**다음 세션 첫 명령어**: `AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3`
