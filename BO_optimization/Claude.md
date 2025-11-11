@@ -3,6 +3,16 @@
 
 Repository: https://github.com/jam961020/graduate_master
 
+**최종 업데이트: 2025.11.11 19:35**
+
+## 📌 대전제
+
+- **이 프로젝트의 핵심은 BoRisk 알고리즘의 올바른 구현**
+- BoRisk = Risk-aware Bayesian Optimization using CVaR (Conditional Value at Risk)
+- 논문: ["Bayesian Optimization under Risk" (BoRisk)](https://arxiv.org/abs/2011.05939)
+- **⚠️ 하드코딩으로 우회하지 말고 문제의 본질을 해결하라**
+- **⚠️ 임시 해결책 사용 시 반드시 TODO 주석을 남겨라**
+
 ---
 
 ## 🤖 Claude 협업 환경
@@ -37,17 +47,55 @@ graduate_master/
 
 ---
 
-## 🎯 현재 작업 상태 (2025.11.11)
+## 🎯 현재 작업 상태 (2025.11.11 19:35)
 
-### ⚠️ 발견된 주요 문제점
+### ✅ 완료된 작업
 
-#### 1. 환경 변수 미사용 (Critical)
+#### 1. CRG311 Linux 빌드 (완료 19:00)
+- AirLine 공식 리포에서 C++ 소스 컴파일
+- pybind11로 Linux .so 생성
+- 경로 수정 및 lazy initialization 적용
+
+#### 2. 평가 메트릭 변경 (완료 19:28)
+- **끝점 기반 → 직선 방정식 기반**
+- `line_equation_evaluation()` 함수 추가 (optimization.py:39-116)
+- Ax + By + C = 0 형식으로 정규화
+- 방향 유사도 (법선 벡터 내적) + 평행 거리
+- 가중치: direction 60%, distance 40%
+
+#### 3. RANSAC 가중치 최적화 (완료 19:28)
+- **6D → 9D 확장**
+- BOUNDS 업데이트: 9D [AirLine 6D + RANSAC 3D]
+- `ransac_center_w`, `ransac_length_w`, `ransac_consensus_w` 추가
+- Sobol 엔진 차원 수정: dimension=9
+- objective_function에 파라미터 전달 구현
+
+#### 4. 로깅 최적화 (완료 19:28)
+- 화면 출력 최소화 (토큰 절약)
+- 상세 로그를 `logs/iter_XXX.json`로 파일 저장
+- 각 반복마다 9D 파라미터, CVaR, 획득함수 값 기록
+
+### 🔄 진행 중
+
+- **테스트 실행 중** (백그라운드 프로세스)
+- 명령: `python optimization.py --iterations 2 --n_initial 3 --alpha 0.3`
+- 로그: `new_test.log`, `logs/iter_*.json`
+
+### 🔴 남은 주요 문제점
+
+#### 1. CVaR 계산 방식 (Critical)
+- **현재**: 직접 평가 사용 (모든 이미지에 대해 실제로 실행)
+- **문제**: BoRisk 논문에서는 GP를 활용한 CVaR 계산 필요
+- **필요한 것**:
+  - GP로부터 예측 분포 샘플링
+  - 샘플링된 분포에서 CVaR 계산
+  - TODO: `optimization.py:217-273` 수정 필요
+
+#### 2. 환경 변수 미사용 (Critical)
 - `environment_independent.py`에 6D 환경 벡터 구현되어 있으나 **optimization.py에서 전혀 사용 안 함**
 - GP가 (x, z) → y 학습하지 않고 x → y만 학습 (일반 BO와 동일)
 - BoRisk의 핵심인 이미지별 환경 컨디셔닝 누락
-
-#### 2. RANSAC 가중치 미연결 (High)
-- `full_pipeline.py`에 RANSAC 가중치 코드 존재하지만 최적화 대상 아님
+- TODO: 9D → 15D 확장 (params 9D + env 6D)
 - `optimization.py`의 BOUNDS가 6D만 정의 (9D로 확장 필요)
 - ransac_center_w, ransac_length_w, ransac_consensus_w 하드코딩됨
 
