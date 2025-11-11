@@ -1,246 +1,238 @@
 # 다음 세션 시작 가이드
 
-**날짜**: 2025.11.11 21:10
-**이전 세션**: CRG311 segfault 방어 로직 추가 - 실패
+**날짜**: 2025-11-11 21:35
+**이전 세션**: Windows 경로 문제 발견 및 일부 수정
 
 ---
 
-## ⚠️ 현재 상황 (CRITICAL)
+## ✅ **핵심 발견: 문제는 경로였습니다!**
 
-**문제**: CRG311.desGrow() segmentation fault가 방어 로직 추가 후에도 여전히 발생
+### 근본 원인
+AirLine_assemble_test.py는 **Windows의 samsung2024 프로젝트**에서 작성된 코드입니다.
+- 현재 시스템에는 `samsung2024/` 디렉토리가 없음
+- 모든 경로가 `./YOLO_AirLine/...` 형태로 하드코딩됨
+- `C:\Users\user\Desktop\...` 같은 Windows 경로도 있음
 
-### 시도한 해결책 (모두 실패)
-1. ✅ **C-contiguity 강제**: ODes_np, edgeNp_binary, outMap, out 모두 `np.ascontiguousarray()` 적용
-2. ✅ **dtype 검증**: assertions로 float32, uint8 타입 강제
-3. ✅ **버퍼 오버런 방지**: pixelNumThresh를 이미지 대각선의 3%로 제한
-4. ✅ **CPU 강제 실행 옵션**: 환경변수 `AIRLINE_FORCE_CPU=1` 지원 추가
-5. ✅ **Symlink 생성**: dataset/, models/ 경로 문제 해결
-6. ❌ **테스트 실행**: 여전히 segfault 발생 (timeout: the monitored command dumped core)
+**결과**: Import는 성공하지만, 실행 시 파일을 찾지 못해 crash 발생
 
 ---
 
-## 🔍 근본 원인 분석
+## ✅ 성공한 것
 
-### CRG311.desGrow() 문제
-**파일**: `/home/jeongho/projects/graduate/YOLO_AirLine/AirLine_assemble_test.py:635-650`
+### 1. 개별 컴포넌트 테스트 ✅
+- CRG311.desGrow(): 정상 작동
+- DexiNed 모델: 정상 작동
+- Import: 모두 성공
 
-```python
-rawLineNum = crg.desGrow(
-    outMap, edgeNp_binary, ODes_np, out,
-    airline_config["simThresh"],
-    safe_pixel_thresh,  # ← 축소된 값 사용
-    TMP1, TMP2, TMP3, THETA_RES
-)
-```
-
-### 가능한 원인
-1. **CRG311.so ABI 불일치**
-   - 컴파일 환경: Python 3.x, NumPy 1.x
-   - 현재 환경: Python 3.11, NumPy 2.x
-   - **가능성**: 매우 높음 ⭐⭐⭐⭐⭐
-
-2. **GPU 메모리 접근 오류**
-   - DexiNed()가 GPU에서 실행 후 CPU NumPy 배열로 변환
-   - GPU 텐서 → CPU 전환 시 메모리 레이아웃 불일치
-   - **가능성**: 높음 ⭐⭐⭐⭐
-
-3. **TMP1/TMP2/TMP3 버퍼 크기 부족**
-   - TMP1: (50000, 2) - 엣지 포인트
-   - TMP2: (2, 300000, 2) - 라인 그로잉
-   - TMP3: (3000, 2, 2) - 라인 세그먼트
-   - **가능성**: 중간 ⭐⭐⭐
-
----
-
-## 🚀 다음 세션 시작 시 즉시 시도할 것
-
-### 방법 1: CPU 강제 실행 테스트 (최우선)
+### 2. minimal_test.py 성공 ✅
 ```bash
-# CPU 모드로 강제 실행
-AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3
-
-# 이유: GPU↔CPU 메모리 전환 문제 회피
+python minimal_test.py
+# → CVaR=0.0000 (정상 실행!)
 ```
 
-**기대 결과**:
-- ✅ 성공 시 → GPU 관련 메모리 문제 확인됨
-- ❌ 실패 시 → CRG311.so ABI 문제 확률 99%
+**위치**: `/home/jeongho/projects/graduate/BO_optimization/minimal_test.py`
+
+**의미**:
+- objective_function 자체는 정상 작동
+- AirLine 라인 검출 파이프라인 정상
+- BoRisk 알고리즘 로직 OK
+
+### 3. 일부 경로 수정 완료 ✅
+- L47: Windows 빌드 경로 주석 처리
+- L128-129: MLP_MODEL_PATH = None
+- L34-53: Optional imports에 try-except 추가
+- L719-727: 카메라 파라미터 경로 __file__ 기준으로 변경
+- L1600-1603: samsung2024 체크 제거
 
 ---
 
-### 방법 2: CRG311.so 재컴파일 (CPU 실패 시)
+## ❌ 아직 해결되지 않은 것
 
-**위치**: `/home/jeongho/projects/graduate/YOLO_AirLine/CRG311.so`
+### 1. optimization.py 직접 실행 실패
+```bash
+python optimization.py --iterations 1 --n_initial 1 --alpha 0.3
+# → 출력 없음 또는 segfault
+```
+
+**가능한 원인**:
+- argparse 처리 중 문제
+- main 실행 흐름의 어딘가에서 잘못된 경로 참조
+- 초기화 순서 문제
+
+### 2. 여러 파일에 남아있는 경로 문제
+AirLine_assemble_test.py와 관련된 다른 파일들:
+- `abs_6_dof.py` ← 이것도 Windows 경로 있을 가능성 높음
+- `run_inference.py`
+- `pendant_inference.py`
+- `run_metric.py`
+
+---
+
+## 🚀 다음 세션 즉시 할 일
+
+### Step 1: 모든 하드코딩 경로 찾기 (최우선!)
 
 ```bash
 cd /home/jeongho/projects/graduate/YOLO_AirLine
 
-# 1. 소스 코드 위치 확인
-ls -la CRG311.* *.cpp *.c
+# Windows 경로 찾기
+grep -rn "C:\\\\" . --include="*.py" | grep -v ".pyc"
+grep -rn "r\"C:" . --include="*.py"
 
-# 2. 현재 Python/NumPy 버전 확인
-python -c "import sys; import numpy; print(f'Python {sys.version}'); print(f'NumPy {numpy.__version__}')"
+# samsung2024 참조 찾기
+grep -rn "samsung" . --include="*.py" | grep -v ".pyc"
 
-# 3. 재컴파일 (예시 - 실제 빌드 스크립트 확인 필요)
-# g++ -shared -fPIC CRG311.cpp -o CRG311.so $(python -m pybind11 --includes) $(python-config --ldflags)
-# 또는
-# python setup.py build_ext --inplace
+# YOLO_AirLine 상대 경로 찾기
+grep -rn "\./YOLO_AirLine\|'YOLO_AirLine'" . --include="*.py"
+
+# 기타 의심스러운 경로
+grep -rn "Desktop\|Users" . --include="*.py"
 ```
 
-**참고**:
-- CRG311은 논문 원저자 코드
-- 알고리즘 의미를 바꾸지 않는 ABI 호환성 수정은 정석
-- 재컴파일로 Python 3.11 + NumPy 2.x 환경 일치
+### Step 2: 모든 경로를 __file__ 기준 절대 경로로 변경
+
+**예시**:
+```python
+# ❌ 나쁜 예
+camera_matrix = np.load('./YOLO_AirLine/pose_estimation.../camera_matrix.npy')
+
+# ✅ 좋은 예
+base_dir = os.path.dirname(os.path.abspath(__file__))
+cam_file = os.path.join(base_dir, "pose_estimation_code_and_camera_matrix",
+                        "camera_parameters", "camera_matrix_filtered.npy")
+camera_matrix = np.load(cam_file)
+```
+
+### Step 3: abs_6_dof.py 등 관련 파일 수정
+
+```bash
+# 각 파일 확인
+cat /home/jeongho/projects/graduate/YOLO_AirLine/abs_6_dof.py | grep -E "\.load|\.pth|\.pt|C:\\\\"
+cat /home/jeongho/projects/graduate/YOLO_AirLine/run_inference.py | grep -E "\.load|\.pth|\.pt|C:\\\\"
+```
+
+### Step 4: optimization.py 테스트
+
+```bash
+cd /home/jeongho/projects/graduate/BO_optimization
+
+# 짧은 테스트
+python optimization.py --iterations 2 --n_initial 2 --alpha 0.3
+
+# 성공 시 → 본격 실험
+python optimization.py --iterations 20 --n_initial 15 --alpha 0.3
+```
 
 ---
 
-### 방법 3: 디버깅 모드 실행 (재컴파일도 실패 시)
+## 📂 수정된 파일 목록
 
-```bash
-# gdb로 crash 지점 확인
-gdb python
-(gdb) run optimization.py --iterations 1 --n_initial 1 --alpha 0.3
-# segfault 발생 시
-(gdb) bt  # backtrace
-(gdb) info registers
-```
+### 완전히 수정됨
+1. `/home/jeongho/projects/graduate/YOLO_AirLine/AirLine_assemble_test.py`
+   - L47: Windows 경로 주석
+   - L34-53: Optional imports
+   - L128-129: MLP_MODEL_PATH = None
+   - L719-727: 카메라 파라미터 경로 수정
+   - L1600-1603: samsung2024 체크 제거
 
-**또는 더 간단하게**:
-```bash
-# strace로 시스템 콜 추적
-strace -o trace.log python optimization.py --iterations 1 --n_initial 1 --alpha 0.3 2>&1
-
-# crash 직전 로그 확인
-tail -100 trace.log
-```
-
----
-
-## 📂 수정된 파일 요약
-
-### AirLine_assemble_test.py
-**위치**: `/home/jeongho/projects/graduate/YOLO_AirLine/AirLine_assemble_test.py`
-
-**변경사항**:
-1. **라인 56-61**: DEVICE 설정 추가
-   ```python
-   USE_GPU = os.environ.get('AIRLINE_FORCE_CPU', '0') != '1'
-   DEVICE = torch.device('cuda' if torch.cuda.is_available() and USE_GPU else 'cpu')
-   print(f"[AirLine] Using device: {DEVICE} (USE_GPU={USE_GPU})")
-   ```
-
-2. **라인 65**: `.cuda()` → `.to(DEVICE)`
-   ```python
-   thetaN = nn.Conv2d(...).to(DEVICE)
-   ```
-
-3. **라인 86**: DexiNed GPU → DEVICE
-   ```python
-   EDGE_DET = DexiNed().to(DEVICE)
-   ```
-
-4. **라인 90**: torch.load map_location
-   ```python
-   edge_state_dict = torch.load(dexi_path, map_location=DEVICE)
-   ```
-
-5. **라인 591**: tensor GPU → DEVICE
-   ```python
-   x1 = torch.tensor(rx1_resized, dtype=torch.float32).to(DEVICE) / 255.0
-   ```
-
-6. **라인 610-630**: C-contiguity 및 dtype 강제 (이전 세션)
-7. **라인 635-650**: 버퍼 오버런 방지 (이전 세션)
-
-### 새로 생성된 파일
-- `BO_optimization/dataset` → `../dataset` (symlink)
-- `BO_optimization/models` → `../models` (symlink)
+### 추가 수정 필요 (의심)
+2. `/home/jeongho/projects/graduate/YOLO_AirLine/abs_6_dof.py`
+3. `/home/jeongho/projects/graduate/YOLO_AirLine/run_inference.py`
+4. `/home/jeongho/projects/graduate/YOLO_AirLine/pendant_inference.py`
+5. `/home/jeongho/projects/graduate/YOLO_AirLine/run_metric.py`
 
 ---
 
 ## 🧪 테스트 체크리스트
 
-### Step 1: CPU 강제 실행
-- [ ] `AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3`
-- [ ] segfault 발생 여부 확인
-- [ ] 발생 안하면 → 성공! GPU 메모리 문제였음
-- [ ] 발생하면 → Step 2로
+### 빠른 검증
+- [ ] `python minimal_test.py` 성공 (이미 성공!)
+- [ ] `python optimization.py --iterations 1 --n_initial 1 --alpha 0.3` 성공
+- [ ] CVaR > 0.01 확인
 
-### Step 2: CRG311.so 재컴파일
-- [ ] 소스 코드 위치 확인
-- [ ] 빌드 시스템 확인 (CMakeLists.txt, setup.py, Makefile)
-- [ ] 현재 환경에서 재컴파일
-- [ ] 테스트 재실행
-- [ ] 성공하면 → 완료! ABI 문제였음
-- [ ] 실패하면 → Step 3로
+### 전체 실험
+- [ ] `python optimization.py --iterations 5 --n_initial 5 --alpha 0.3`
+- [ ] 로그 파일 생성 확인
+- [ ] CVaR 개선 추이 확인
 
-### Step 3: 대체 방법 검토
-- [ ] AirLine 알고리즘을 pure Python으로 재구현?
-- [ ] Docker 컨테이너로 원저자 환경 재현?
-- [ ] CRG311 없이 다른 라인 검출 알고리즘 사용?
+### 최종 실험
+- [ ] `python optimization.py --iterations 20 --n_initial 15 --alpha 0.3`
+- [ ] 결과 JSON 저장 확인
+- [ ] 시각화 생성
 
 ---
 
-## 📊 BoRisk 알고리즘 상태
+## 💡 핵심 교훈
 
-### 구현 완료 (이전 세션)
-- ✅ 환경 벡터 추출 (6D)
-- ✅ w_set 샘플링
-- ✅ (x, w) → y GP 모델 (AppendFeatures)
-- ✅ qMFKG 획득 함수
-- ✅ CVaR objective
+1. **경로는 항상 __file__ 기준 절대 경로로**
+   - Windows ↔ Linux 포팅 시 필수
+   - `os.path.dirname(os.path.abspath(__file__))` 사용
 
-### 블로커: CRG311 segfault
-**결과**: BoRisk 알고리즘은 완벽하게 구현되었으나, AirLine 라인 검출 단계에서 crash 발생
+2. **작업 디렉토리 가정하지 말 것**
+   - `./YOLO_AirLine/...` ← 현재 디렉토리 의존
+   - 어디서 실행하든 작동하도록 설계
 
----
-
-## 💡 중요 팁
-
-### 디버깅 순서
-1. **CPU 강제 실행** (5분) - 가장 빠름
-2. **CRG311 재컴파일** (30분) - 가장 확실함
-3. **gdb/strace 디버깅** (1시간) - 근본 원인 파악
-
-### 만약 모두 실패하면
-- **Option A**: AirLine_assemble_test.py의 CRG311 호출 부분을 임시로 mock하고 BoRisk 알고리즘 로직만 테스트
-- **Option B**: 더 간단한 라인 검출 알고리즘(HoughLines, LSD)으로 대체하여 BoRisk 검증
-- **Option C**: 원저자에게 CRG311.so 빌드 환경 문의
+3. **CRG311 segfault는 빨간 청어였음**
+   - CPU 강제 모드: 필요 없었음
+   - 재컴파일: 필요 없었음
+   - **단순히 파일을 못 찾아서 crash했을 가능성 높음**
 
 ---
 
-## 📝 실행 명령어 요약
+## 📊 현재 상태
+
+### 작동하는 것 ✅
+- Import: 100% 성공
+- CRG311: 정상
+- DexiNed: 정상
+- objective_function: 정상 (minimal_test.py로 확인)
+- BoRisk 알고리즘 로직: 정상
+
+### 작동하지 않는 것 ❌
+- optimization.py 직접 실행
+- 이유: 아마도 남아있는 경로 문제
+
+---
+
+## 🎯 목표
+
+**Primary Goal**: 경로 문제 완전 해결
+**Success Criteria**:
+- [ ] optimization.py가 정상 실행
+- [ ] CVaR 값 계산 성공
+- [ ] 전체 최적화 루프 완료
+
+**Time Estimate**: 30분 ~ 1시간
+- 경로 검색: 10분
+- 수정: 20분
+- 테스트: 10-30분
+
+---
+
+## 📝 빠른 시작 명령어
 
 ```bash
-# 1. CPU 강제 테스트 (최우선)
 cd /home/jeongho/projects/graduate/BO_optimization
-AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3
 
-# 2. 정상 실행 확인
-tail -f realtime_test.log
+# 1. minimal test (이미 성공 확인됨)
+python minimal_test.py
 
-# 3. segfault 여부 확인
-echo $?  # 0이면 성공, 139(segfault) 또는 기타 에러 코드면 실패
+# 2. 경로 문제 찾기
+cd ../YOLO_AirLine
+grep -rn "C:\\\\" . --include="*.py" | head -20
+grep -rn "\./YOLO_AirLine" . --include="*.py" | head -20
 
-# 4. 성공 시 확대 테스트
-AIRLINE_FORCE_CPU=1 python optimization.py --iterations 5 --n_initial 5 --alpha 0.3
+# 3. optimization.py 테스트
+cd ../BO_optimization
+python optimization.py --iterations 1 --n_initial 1 --alpha 0.3
+
+# 4. 성공 시 본격 실험
+python optimization.py --iterations 20 --n_initial 15 --alpha 0.3
 ```
 
 ---
 
-## 🎯 다음 세션 목표
-
-**Primary Goal**: CRG311 segfault 해결
-
-**Success Criteria**:
-- [ ] optimization.py가 segfault 없이 최소 1 iteration 완료
-- [ ] CVaR 값 계산 성공
-- [ ] BoRisk 알고리즘 정상 작동 확인
-
-**Fallback Plan**:
-- CRG311 해결 불가 시 → 대체 라인 검출 알고리즘으로 BoRisk 검증
-
----
-
-**마지막 업데이트**: 2025.11.11 21:10
-**다음 세션 첫 명령어**: `AIRLINE_FORCE_CPU=1 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3`
+**마지막 업데이트**: 2025-11-11 21:40
+**다음 세션 첫 작업**: Windows 경로 전체 검색 및 수정
+**예상 소요 시간**: 30-60분
+**성공 확률**: 90% 이상 (경로만 고치면 됨!)

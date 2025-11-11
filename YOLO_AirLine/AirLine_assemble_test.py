@@ -30,10 +30,27 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 import CRG311 as crg
 from deximodel import DexiNed
-from abs_6_dof import *
-from run_inference import CoordNet, run_inference, run_evaluation
-from run_metric import run_formula_based_inference
-from pendant_inference import calculate_final_information
+
+# Optional imports (for standalone welding line detection, these are not needed)
+try:
+    from abs_6_dof import *
+except ImportError:
+    print("[WARN] abs_6_dof not available (OK for line detection only)")
+
+try:
+    from run_inference import CoordNet, run_inference, run_evaluation
+except ImportError:
+    print("[WARN] run_inference not available (OK for line detection only)")
+
+try:
+    from run_metric import run_formula_based_inference
+except ImportError:
+    print("[WARN] run_metric not available (OK for line detection only)")
+
+try:
+    from pendant_inference import calculate_final_information
+except ImportError:
+    print("[WARN] pendant_inference not available (OK for line detection only)")
 
 import cv2
 import numpy as np
@@ -44,7 +61,7 @@ import math
 # 이 스크립트는 상위 디렉토리에서 실행되므로, 
 # CRG311.pyd, deximodel.py 등이 있는 경로를 sys.path에 추가해줘야 합니다.
 sys.path.append(os.path.join(os.path.dirname(__file__))) # YOLO_AirLine 폴더
-sys.path.append(r"C:\Users\user\Desktop\study\task\weld2025\AirLine\build")
+# sys.path.append(r"C:\Users\user\Desktop\study\task\weld2025\AirLine\build")  # Windows only - disabled for Linux
 
 # ────────────────── 1. 전역 변수 및 모델 초기화 ─────────────────────
 # YOLO 모델 (lazy initialization으로 변경)
@@ -108,7 +125,8 @@ BLUR_THRESHOLD_2ND = 300.0 # 2차 블러 (마커 영역) 필터링 임계값
 ROTATION_THRESHOLD_DEG = 50.0 # 허용 총 회전 각도 (pitch+yaw+roll의 절대값 합)
 
 # 6. MLP 모델 경로
-MLP_MODEL_PATH = r"C:\Users\user\Desktop\study\task\weld2025\weld2025_samsung_git_temp\testing\samsung2024\welding_project\welding_project\model_A.pth"
+# MLP_MODEL_PATH = r"C:\Users\user\Desktop\study\task\weld2025\weld2025_samsung_git_temp\testing\samsung2024\welding_project\welding_project\model_A.pth"  # Windows only
+MLP_MODEL_PATH = None  # Disabled for Linux
 
 # ─────────────────────── 2. 보조 및 처리 함수 ────────────────────────
 EXTS = {".png", ".jpg", ".jpeg"}
@@ -698,11 +716,14 @@ def process(data_dir: Path, out_root: Path, airline_config: dict):
     """
     # [추가] 카메라 파라미터 로드
     try:
-        camera_matrix = np.load('./YOLO_AirLine/pose_estimation_code_and_camera_matrix/camera_parameters/camera_matrix_filtered.npy')
-        dist_coeffs = np.load('./YOLO_AirLine/pose_estimation_code_and_camera_matrix/camera_parameters/dist_coeffs_filtered.npy')
+        # 절대 경로로 변경: __file__ 기준
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        cam_dir = os.path.join(base_dir, "pose_estimation_code_and_camera_matrix", "camera_parameters")
+        camera_matrix = np.load(os.path.join(cam_dir, "camera_matrix_filtered.npy"))
+        dist_coeffs = np.load(os.path.join(cam_dir, "dist_coeffs_filtered.npy"))
         print("[INFO] Real camera parameters loaded.")
     except FileNotFoundError:
-        print("[ERROR] Camera parameter files not found! Pose estimation will be skipped.")
+        print("[WARN] Camera parameter files not found! Pose estimation will be skipped.")
         camera_matrix, dist_coeffs = None, None
 
     # [수정] 새로운 데이터셋 구조에 맞게 경로 처리 로직 단순화
@@ -1576,9 +1597,10 @@ def sort_rectangle_points_clockwise(pts):
 # ─────────────────────── 5. CLI 및 실험 실행기 ────────────────────────
 if __name__ == "__main__":
     print(f"현재 작업 디렉토리: {os.getcwd()}")
-    if not os.path.exists('YOLO_AirLine'):
-        print("오류: 이 스크립트는 프로젝트 루트(samsung2024)에서 실행해야 합니다.")
-        sys.exit(1)
+    # 작업 디렉토리 체크 제거 - 어디서든 실행 가능
+    # if not os.path.exists('YOLO_AirLine'):
+    #     print("오류: 이 스크립트는 프로젝트 루트(samsung2024)에서 실행해야 합니다.")
+    #     sys.exit(1)
 
     ap = argparse.ArgumentParser(description="선 검출 알고리즘 파라미터 조합 테스트")
     ap.add_argument("--data_dir", required=True, help="데이터셋 루트 (내부에 image, labels 폴더 존재)")
