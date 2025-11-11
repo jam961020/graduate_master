@@ -1,0 +1,24 @@
+{
+  "alpha": 0.3,
+  "n_images": 113,
+  "n_original": 113,
+  "n_augmented": 0,
+  "iterations": 2,
+  "best_params": {
+    "edgeThresh1": 4.930445075035095,
+    "simThresh1": 0.6491036170721054,
+    "pixelRatio1": 0.022836195826530455,
+    "edgeThresh2": 1.4011586904525757,
+    "simThresh2": 0.7038620987534523,
+    "pixelRatio2": 0.03675869613885879
+  },
+  "history": [
+    0.001136539020054795,
+    0.001136539020054795,
+    0.001136539020054795
+  ],
+  "final_cvar": 0.001136539020054795,
+  "improvement": 0.0,
+  "complete_only": false,
+  "n_augment": 0
+}
