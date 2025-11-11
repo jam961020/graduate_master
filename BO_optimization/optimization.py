@@ -446,7 +446,7 @@ if __name__ == "__main__":
     parser.add_argument("--yolo_model", default="models/best.pt", help="YOLO model path")
     parser.add_argument("--iterations", type=int, default=20, help="BO iterations")
     parser.add_argument("--n_initial", type=int, default=15, help="Initial samples")
-    parser.add_argument("--alpha", type=float, default=0.3, help="CVaR alpha (worst %)")
+    parser.add_argument("--alpha", type=float, default=0.3, help="CVaR alpha (worst percent)")
     parser.add_argument("--complete_only", action="store_true", help="Use only complete GT images")
     parser.add_argument("--n_augment", type=int, default=0, help="Number of augmentations per image")
     args = parser.parse_args()
