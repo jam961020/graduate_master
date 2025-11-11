@@ -130,13 +130,131 @@ def compute_cvar_from_gp(gp, X, images_data, alpha=0.3, n_samples=1000):
     return np.mean(cvars)
 ```
 
-### 수정 계획
-1. `environment_independent.py`의 `extract_environment()` 함수 확인
-2. GP 입력 차원 확장: 9D → 15D (params 9D + env 6D)
-3. `objective_function` 분리:
-   - `evaluate_real()`: 실제 평가 (초기화 및 학습용)
-   - `compute_cvar_from_gp()`: GP 기반 CVaR (획득함수 평가용)
-4. 획득함수를 CVaR-aware로 변경
+### 수정 계획 (BoRisk 정식 알고리즘)
+
+#### Step 1: 환경 변수 추출 및 w_set 구성
+```python
+from environment_independent import extract_environment
+
+# 모든 이미지의 환경 벡터 미리 추출
+all_env_features = []
+for img_data in images_data:
+    env = extract_environment(img_data['image'])  # 6D
+    all_env_features.append(torch.tensor([
+        env['brightness'], env['contrast'], env['edge_density'],
+        env['texture_complexity'], env['blur_level'], env['noise_level']
+    ]))
+
+# w_set: 매 iteration마다 n_w개 샘플링 (예: 10~20개)
+def sample_w_set(all_env_features, n_w=15):
+    indices = torch.randperm(len(all_env_features))[:n_w]
+    return torch.stack([all_env_features[i] for i in indices])
+```
+
+#### Step 2: GP 모델 구조 변경
+```python
+from botorch.models import SingleTaskGP
+from botorch.models.transforms.input import AppendFeatures
+
+# GP 입력: [N, 9] params only
+# AppendFeatures가 자동으로 w_set 추가 → [N*n_w, 15]
+model = SingleTaskGP(
+    train_X,  # [N, 9] params만
+    train_Y,  # [N*n_w, 1] 각 x마다 n_w개 환경 평가
+    input_transform=AppendFeatures(feature_set=w_set)
+)
+```
+
+#### Step 3: 획득 함수를 BoRisk로 변경
+```python
+from botorch.acquisition.multi_fidelity import qMultiFidelityKnowledgeGradient
+from botorch.acquisition.objective import GenericMCObjective
+
+def cvar_objective(samples, alpha=0.3):
+    """CVaR 계산 objective"""
+    # samples: [n_samples, n_w, 1]
+    n_worst = max(1, int(samples.shape[1] * alpha))
+    worst_samples = torch.topk(samples, n_worst, dim=1, largest=False).values
+    return worst_samples.mean(dim=1)
+
+# BoRisk 획득 함수
+acqf = qMultiFidelityKnowledgeGradient(
+    model=model,
+    num_fantasies=64,  # 판타지 샘플 개수
+    objective=GenericMCObjective(cvar_objective),
+    project=lambda X: X[..., :9]  # w 제거, x만 반환
+)
+```
+
+#### Step 4: 평가 방식 변경
+```python
+# 기존 (잘못됨): 모든 113개 이미지 평가
+# 새 방식: w_set의 n_w개만 평가
+
+def evaluate_on_w_set(params, images_data, env_features, w_set_indices):
+    """
+    하나의 params에 대해 w_set 이미지만 평가
+
+    Args:
+        params: [9D] 파라미터
+        images_data: 전체 이미지 데이터
+        env_features: 전체 환경 벡터 리스트
+        w_set_indices: w_set에 선택된 이미지 인덱스
+
+    Returns:
+        scores: [n_w, 1] 각 환경에서의 성능
+    """
+    scores = []
+    for idx in w_set_indices:
+        img_data = images_data[idx]
+        score = evaluate_single(params, img_data)
+        scores.append(score)
+
+    return torch.tensor(scores).unsqueeze(-1)
+
+# 매 iteration:
+candidate = optimize_acqf(acqf, bounds, q=1)
+observations = evaluate_on_w_set(candidate, images_data, all_env, w_indices)
+# observations: [n_w, 1] - w_set 크기만큼만 평가!
+```
+
+#### Step 5: BO 루프 수정
+```python
+for iteration in range(n_iterations):
+    # 1. w_set 샘플링 (매번 새로 또는 고정)
+    w_set, w_indices = sample_w_set(all_env_features, n_w=15)
+
+    # 2. GP 모델 생성/업데이트
+    model = SingleTaskGP(
+        train_X,  # [N, 9]
+        train_Y,  # [N*n_w, 1]
+        input_transform=AppendFeatures(feature_set=w_set)
+    )
+    fit_gpytorch_mll(mll)
+
+    # 3. 획득 함수 생성
+    acqf = qMultiFidelityKnowledgeGradient(...)
+
+    # 4. 다음 평가 지점 선택
+    candidate, _ = optimize_acqf(acqf, bounds, q=1)
+
+    # 5. w_set에서만 평가 (15개만!)
+    new_Y = evaluate_on_w_set(candidate, images_data, all_env, w_indices)
+
+    # 6. 데이터 추가
+    train_X = torch.cat([train_X, candidate])
+    train_Y = torch.cat([train_Y, new_Y])
+```
+
+### 핵심 차이점 요약
+
+| 항목 | 현재 (잘못됨) | BoRisk (올바름) |
+|------|--------------|----------------|
+| **평가 개수** | 매번 113개 전체 | 매번 n_w개 (10~20개) |
+| **GP 모델** | (x) → y | (x, w) → y |
+| **획득 함수** | EI/UCB | ρKG (qMFKG) |
+| **CVaR 계산** | 직접 평가 | GP 샘플링 |
+| **속도** | 매우 느림 | 빠름 (1/10) |
 
 ---
 
