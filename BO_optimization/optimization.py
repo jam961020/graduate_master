@@ -1,11 +1,11 @@
 """
-BoRisk CVaR Optimization - 완전 수정 버전
+BoRisk CVaR Optimization - BoRisk 알고리즘 완전 구현
 핵심 수정사항:
-1. GP 정규화 및 안정화
-2. 획득함수 개선 (UCB/EI 전환)
-3. CVaR 계산 수정
-4. 초기 샘플링 후 GP 업데이트
-5. 로깅 개선 (점만 추가)
+1. w_set 샘플링 시스템 (n_w개만 평가)
+2. GP 모델: (x, w) → y 학습
+3. qMultiFidelityKnowledgeGradient 획득 함수
+4. CVaR objective 통합
+5. 판타지 관측 구조
 """
 import torch
 import numpy as np
@@ -15,9 +15,12 @@ import sys
 import traceback
 from pathlib import Path
 from botorch.models import SingleTaskGP
+from botorch.models.transforms.input import AppendFeatures
 from botorch.fit import fit_gpytorch_mll
 from botorch.optim import optimize_acqf
-from botorch.acquisition import qExpectedImprovement, qUpperConfidenceBound
+from botorch.acquisition import (qExpectedImprovement, qUpperConfidenceBound,
+                                 qMultiFidelityKnowledgeGradient)
+from botorch.acquisition.objective import GenericMCObjective
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from torch.quasirandom import SobolEngine
 
@@ -25,6 +28,7 @@ from torch.quasirandom import SobolEngine
 sys.path.insert(0, str(Path(__file__).parent))
 from full_pipeline import detect_with_full_pipeline
 from yolo_detector import YOLODetector
+from environment_independent import extract_parameter_independent_environment
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DTYPE = torch.double
@@ -214,6 +218,160 @@ def augment_image(image, n_augment=5):
     return augmented
 
 
+def extract_all_environments(images_data):
+    """
+    모든 이미지의 환경 벡터를 사전 추출
+
+    Args:
+        images_data: 이미지 데이터 리스트
+
+    Returns:
+        env_features: [N, 6] 환경 벡터 텐서
+    """
+    print("[BoRisk] Extracting environment features from all images...")
+    all_env = []
+
+    for img_data in images_data:
+        image = img_data['image']
+        roi = img_data.get('roi', None)
+
+        # 환경 벡터 추출
+        env = extract_parameter_independent_environment(image, roi)
+        env_vec = [
+            env['brightness'],
+            env['contrast'],
+            env['edge_density'],
+            env['texture_complexity'],
+            env['blur_level'],
+            env['noise_level']
+        ]
+        all_env.append(env_vec)
+
+    env_features = torch.tensor(all_env, dtype=DTYPE, device=DEVICE)
+    print(f"[BoRisk] Environment features shape: {env_features.shape}")
+
+    return env_features
+
+
+def sample_w_set(env_features, n_w=15, seed=None):
+    """
+    w_set 샘플링 (BoRisk의 핵심)
+
+    Args:
+        env_features: [N, 6] 전체 환경 벡터
+        n_w: 샘플링할 환경 개수
+        seed: 랜덤 시드
+
+    Returns:
+        w_set: [n_w, 6] 샘플링된 환경 벡터
+        w_indices: [n_w] 샘플링된 인덱스
+    """
+    if seed is not None:
+        torch.manual_seed(seed)
+
+    N = env_features.shape[0]
+    n_w = min(n_w, N)  # N보다 클 수 없음
+
+    # 랜덤 샘플링
+    perm = torch.randperm(N)
+    w_indices = perm[:n_w]
+    w_set = env_features[w_indices]
+
+    return w_set, w_indices
+
+
+def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
+    """
+    w_set에 해당하는 이미지만 평가 (BoRisk의 핵심!)
+
+    Args:
+        X: [1, 9] 파라미터
+        images_data: 전체 이미지 데이터
+        yolo_detector: YOLO 검출기
+        w_indices: [n_w] 평가할 이미지 인덱스
+
+    Returns:
+        scores: [n_w, 1] 각 환경에서의 성능
+    """
+    params = {
+        'edgeThresh1': X[0, 0].item(),
+        'simThresh1': X[0, 1].item(),
+        'pixelRatio1': X[0, 2].item(),
+        'edgeThresh2': X[0, 3].item(),
+        'simThresh2': X[0, 4].item(),
+        'pixelRatio2': X[0, 5].item(),
+        'ransac_center_w': X[0, 6].item(),
+        'ransac_length_w': X[0, 7].item(),
+        'ransac_consensus_w': int(X[0, 8].item()),
+    }
+
+    scores = []
+
+    for idx in w_indices:
+        try:
+            img_data = images_data[idx.item() if torch.is_tensor(idx) else idx]
+            image = img_data['image']
+            gt_coords = img_data['gt_coords']
+
+            detected_coords = detect_with_full_pipeline(image, params, yolo_detector)
+
+            h, w = image.shape[:2]
+            score = line_equation_evaluation(detected_coords, gt_coords, image_size=(w, h))
+            scores.append(score)
+
+        except KeyboardInterrupt:
+            raise
+        except Exception:
+            scores.append(0.0)
+
+    return torch.tensor(scores, dtype=DTYPE, device=DEVICE).unsqueeze(-1)
+
+
+def compute_cvar_from_scores(scores, alpha=0.3):
+    """
+    스코어 벡터로부터 CVaR 계산
+
+    Args:
+        scores: [n] 또는 [n, 1] 스코어 텐서
+        alpha: CVaR threshold
+
+    Returns:
+        cvar: float
+    """
+    if scores.dim() > 1:
+        scores = scores.squeeze()
+
+    n = scores.shape[0]
+    n_worst = max(1, int(n * alpha))
+
+    worst_scores, _ = torch.topk(scores, n_worst, largest=False)
+    return worst_scores.mean().item()
+
+
+def cvar_objective(samples, alpha=0.3):
+    """
+    CVaR objective for BoRisk
+
+    Args:
+        samples: [n_samples, n_w, 1] GP 샘플
+        alpha: CVaR threshold
+
+    Returns:
+        cvar_values: [n_samples] CVaR 값
+    """
+    # samples: [n_samples, n_w, 1] → [n_samples, n_w]
+    samples = samples.squeeze(-1)
+
+    n_w = samples.shape[1]
+    n_worst = max(1, int(n_w * alpha))
+
+    # 각 샘플에 대해 worst n_worst개의 평균 계산
+    worst_samples, _ = torch.topk(samples, n_worst, dim=1, largest=False)
+    cvar_values = worst_samples.mean(dim=1)
+
+    return cvar_values
+
+
 def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
     """
     CVaR 목적 함수
@@ -273,114 +431,163 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
     return cvar
 
 
-def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp", 
-                           n_iterations=30, n_initial=15, alpha=0.3):
+def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
+                           n_iterations=30, n_initial=15, alpha=0.3, n_w=15):
     """
-    메인 최적화 루프 (완전 수정됨)
-    
-    주요 개선사항:
-    1. 초기 샘플링 후 즉시 GP 학습
-    2. Y 값 정규화
-    3. 탐험-활용 밸런싱 (UCB → EI)
-    4. 획득함수 최적화 개선
+    BoRisk 알고리즘 완전 구현
+
+    핵심 원리:
+    1. 환경 벡터 사전 추출 (모든 이미지)
+    2. w_set 샘플링 (매 iteration마다 n_w개)
+    3. GP 모델: (x, w) → y 학습
+    4. qMFKG 획득 함수 + CVaR objective
+    5. 매 iteration마다 w_set만 평가 (113개 아님!)
     """
     print("\n" + "="*60)
-    print(f"Risk-aware BO with CVaR")
+    print(f"BoRisk CVaR Optimization")
     print(f"Total images: {len(images_data)}")
     print(f"CVaR α: {alpha} (worst {int(alpha*100)}%)")
+    print(f"w_set size: {n_w}")
     print("="*60)
-    
-    # 1. 초기 샘플링
+
+    # ===== Phase 0: 환경 벡터 사전 추출 =====
+    print(f"\n[Phase 0] Environment feature extraction")
+    all_env_features = extract_all_environments(images_data)
+
+    # ===== Phase 1: 초기 샘플링 =====
     print(f"\n[Phase 1] Initial sampling ({n_initial} samples)")
+    print(f"  - Each sample evaluated on {n_w} environments")
+    print(f"  - Total evaluations: {n_initial * n_w}")
 
     sobol = SobolEngine(dimension=9, scramble=True)
     X_init = sobol.draw(n_initial).to(dtype=DTYPE, device=DEVICE)
     X_init = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * X_init
-    
-    Y_init = []
+
+    # 초기 샘플링: 각 x에 대해 w_set 평가
+    train_X = []
+    train_Y = []
+
     for i, x in enumerate(X_init):
-        score = objective_function(x.unsqueeze(0), images_data, yolo_detector,
-                                  alpha=alpha, verbose=False)
-        Y_init.append(score)
-        print(f"Init {i+1}/{n_initial}: CVaR={score:.4f}")
-    
-    Y_init = torch.tensor(Y_init, dtype=DTYPE, device=DEVICE).unsqueeze(-1)
-    
-    # 2. Y 값 정규화 (중요!)
-    Y_mean = Y_init.mean()
-    Y_std = Y_init.std()
-    
+        # w_set 샘플링 (초기에는 고정된 seed 사용)
+        w_set, w_indices = sample_w_set(all_env_features, n_w=n_w, seed=i)
+
+        # w_set에 대해서만 평가
+        scores = evaluate_on_w_set(x.unsqueeze(0), images_data, yolo_detector, w_indices)
+
+        # 각 x를 n_w번 복제 (BoRisk 구조)
+        for j in range(n_w):
+            train_X.append(x.clone())
+        train_Y.append(scores)
+
+        cvar = compute_cvar_from_scores(scores.squeeze(-1), alpha)
+        print(f"Init {i+1}/{n_initial}: CVaR={cvar:.4f}, mean={scores.mean():.4f}")
+
+    train_X = torch.stack(train_X)  # [n_initial * n_w, 9]
+    train_Y = torch.cat(train_Y)    # [n_initial * n_w, 1]
+
+    # ===== Phase 2: Y 값 정규화 =====
+    Y_mean = train_Y.mean()
+    Y_std = train_Y.std()
+
     if Y_std < 1e-6:
         print("\n⚠️ Warning: Low variance in Y values, adding noise...")
-        Y_init = Y_init + 0.01 * torch.randn_like(Y_init)
-        Y_mean = Y_init.mean()
-        Y_std = Y_init.std()
-    
-    Y_normalized = (Y_init - Y_mean) / Y_std
-    
-    print(f"Init complete: mean={Y_mean:.4f}, std={Y_std:.4f}, best={Y_init.max().item():.4f}")
+        train_Y = train_Y + 0.01 * torch.randn_like(train_Y)
+        Y_mean = train_Y.mean()
+        Y_std = train_Y.std()
 
-    # 3. 초기 GP 학습 (중요!)
-    X = X_init
-    Y = Y_normalized
-    Y_original = Y_init
+    train_Y_normalized = (train_Y - Y_mean) / Y_std
 
-    print(f"\n[Phase 2] GP training")
-    gp = SingleTaskGP(X, Y)
+    print(f"\n[Phase 2] Data normalization")
+    print(f"  mean={Y_mean:.4f}, std={Y_std:.4f}")
+    print(f"  min={train_Y.min().item():.4f}, max={train_Y.max().item():.4f}")
+
+    # ===== Phase 3: w_set 샘플링 (첫 iteration용) =====
+    w_set, w_indices = sample_w_set(all_env_features, n_w=n_w)
+
+    # ===== Phase 4: GP 모델 생성 (BoRisk 구조!) =====
+    print(f"\n[Phase 3] GP model initialization")
+    print(f"  - Input: x only [9D]")
+    print(f"  - AppendFeatures: w_set [{n_w}, 6D]")
+    print(f"  - GP learns: (x, w) → y")
+
+    gp = SingleTaskGP(
+        train_X,                      # [N*n_w, 9] params만
+        train_Y_normalized,           # [N*n_w, 1] 정규화된 Y
+        input_transform=AppendFeatures(feature_set=w_set)  # w_set 자동 추가!
+    )
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
     fit_gpytorch_mll(mll)
-    print(f"GP noise level: {gp.likelihood.noise.item():.6f}")
-    
-    best_observed = [Y_original.max().item()]
+    print(f"  GP noise level: {gp.likelihood.noise.item():.6f}")
+
+    # Best CVaR 추적 (각 x에 대해)
+    best_cvar_history = []
+    for i in range(n_initial):
+        start_idx = i * n_w
+        end_idx = start_idx + n_w
+        cvar = compute_cvar_from_scores(train_Y[start_idx:end_idx].squeeze(), alpha)
+        best_cvar_history.append(cvar)
+    print(f"  Initial best CVaR: {max(best_cvar_history):.4f}")
 
     # 로그 디렉토리 생성
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
 
-    # 4. BO 루프
-    print(f"\n[Phase 3] BO iterations")
+    # ===== Phase 5: BO 루프 (BoRisk!) =====
+    print(f"\n[Phase 4] BO iterations (BoRisk)")
     print("-"*60)
-    
+
     for iteration in range(n_iterations):
-        # 4.1 탐험-활용 전략
-        if iteration < n_iterations // 3:
-            # 초반: 탐험 (UCB)
-            beta = 2.0
-            acq_func = qUpperConfidenceBound(gp, beta=beta)
-            acq_name = "UCB"
-        else:
-            # 후반: 활용 (EI)
-            acq_func = qExpectedImprovement(gp, Y.max())
-            acq_name = "EI"
-        
-        # 4.2 획득함수 최적화
+        # 5.1: 새로운 w_set 샘플링 (매 iteration마다)
+        w_set, w_indices = sample_w_set(all_env_features, n_w=n_w)
+
+        # 5.2: qMFKG 획득 함수 생성 (BoRisk의 핵심!)
         try:
+            # CVaR objective 래핑
+            cvar_obj = GenericMCObjective(lambda samples: cvar_objective(samples, alpha))
+
+            # qMFKG: Knowledge Gradient with fantasies
+            acq_func = qMultiFidelityKnowledgeGradient(
+                model=gp,
+                num_fantasies=64,  # 판타지 샘플 개수
+                objective=cvar_obj,
+                project=lambda X: X[..., :9]  # w 제거, x만 반환
+            )
+
+            # 획득 함수 최적화
             candidate, acq_value = optimize_acqf(
                 acq_func,
                 bounds=BOUNDS,
                 q=1,
-                num_restarts=20,  # 증가
-                raw_samples=1024  # 증가
+                num_restarts=10,
+                raw_samples=512
             )
+            acq_name = "qMFKG"
+
         except Exception as e:
-            print(f"\n⚠️ Acquisition optimization failed: {e}")
-            # 폴백: 랜덤 샘플링
-            candidate = torch.rand(1, 9, dtype=DTYPE, device=DEVICE)
-            candidate = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * candidate
-            acq_value = torch.tensor(0.0)
-        
-        # 4.3 평가 (단 1회만 실행됨)
-        new_y = objective_function(candidate, images_data, yolo_detector,
-                                  alpha=alpha, verbose=False)
+            print(f"\n⚠️ qMFKG failed: {e}, falling back to UCB...")
+            # 폴백: UCB
+            acq_func = qUpperConfidenceBound(gp, beta=2.0)
+            candidate, acq_value = optimize_acqf(
+                acq_func,
+                bounds=BOUNDS,
+                q=1,
+                num_restarts=10,
+                raw_samples=512
+            )
+            acq_name = "UCB"
 
-        # 정규화
-        new_y_normalized = (new_y - Y_mean.item()) / (Y_std.item() + 1e-6)
+        # 5.3: w_set에서만 평가 (BoRisk의 핵심!)
+        new_scores = evaluate_on_w_set(candidate, images_data, yolo_detector, w_indices)
+        new_cvar = compute_cvar_from_scores(new_scores.squeeze(), alpha)
 
-        # 4.3.1 반복마다 로그 저장
+        # 5.4: 정규화
+        new_scores_normalized = (new_scores - Y_mean) / (Y_std + 1e-6)
+
+        # 5.5: 로그 저장
         iter_log = {
             "iteration": iteration + 1,
             "acq_function": acq_name,
-            "acq_value": float(acq_value.item()),
+            "acq_value": float(acq_value.item()) if torch.is_tensor(acq_value) else 0.0,
             "parameters": {
                 "edgeThresh1": float(candidate[0, 0].item()),
                 "simThresh1": float(candidate[0, 1].item()),
@@ -392,54 +599,76 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 "ransac_length_w": float(candidate[0, 7].item()),
                 "ransac_consensus_w": int(candidate[0, 8].item()),
             },
-            "cvar": float(new_y),
-            "cvar_normalized": float(new_y_normalized)
+            "cvar": float(new_cvar),
+            "mean_score": float(new_scores.mean().item()),
+            "n_w": n_w
         }
 
         log_file = log_dir / f"iter_{iteration+1:03d}.json"
         with open(log_file, 'w') as f:
             json.dump(iter_log, f, indent=2)
-        
-        # 4.4 데이터 추가
-        X = torch.cat([X, candidate])
-        Y = torch.cat([Y, torch.tensor([[new_y_normalized]], dtype=DTYPE, device=DEVICE)])
-        Y_original = torch.cat([Y_original, torch.tensor([[new_y]], dtype=DTYPE, device=DEVICE)])
-        
-        # 4.5 GP 재학습
+
+        # 5.6: 데이터 추가 (x를 n_w번 복제)
+        for j in range(n_w):
+            train_X = torch.cat([train_X, candidate])
+        train_Y = torch.cat([train_Y, new_scores])
+        train_Y_normalized = torch.cat([train_Y_normalized, new_scores_normalized])
+
+        best_cvar_history.append(new_cvar)
+
+        # 5.7: GP 재학습 (AppendFeatures with new w_set)
         try:
-            gp = SingleTaskGP(X, Y)
+            gp = SingleTaskGP(
+                train_X,
+                train_Y_normalized,
+                input_transform=AppendFeatures(feature_set=w_set)
+            )
             mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
             fit_gpytorch_mll(mll)
         except Exception as e:
             print(f"  ⚠️ GP refit failed: {e}")
             # 노이즈 추가 후 재시도
-            Y = Y + 0.01 * torch.randn_like(Y)
-            gp = SingleTaskGP(X, Y)
+            train_Y_normalized = train_Y_normalized + 0.01 * torch.randn_like(train_Y_normalized)
+            gp = SingleTaskGP(
+                train_X,
+                train_Y_normalized,
+                input_transform=AppendFeatures(feature_set=w_set)
+            )
             mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
             fit_gpytorch_mll(mll)
-        
-        best_observed.append(Y_original.max().item())
-        improvement = best_observed[-1] - best_observed[-2]
 
-        print(f"Iter {iteration+1}/{n_iterations} ({acq_name}): CVaR={new_y:.4f}, Best={best_observed[-1]:.4f} ({improvement:+.4f})")
-        
-        # 4.6 조기 종료 체크
+        # 5.8: 진행 상황 출력
+        current_best = max(best_cvar_history)
+        improvement = new_cvar - current_best if len(best_cvar_history) > 1 else 0.0
+
+        print(f"Iter {iteration+1}/{n_iterations} ({acq_name}): CVaR={new_cvar:.4f}, Best={current_best:.4f} ({improvement:+.4f})")
+
+        # 5.9: 조기 종료 체크
         if iteration > 10:
-            recent_improvements = [best_observed[i] - best_observed[i-1] 
+            recent_improvements = [best_cvar_history[i] - best_cvar_history[i-1]
                                   for i in range(-5, 0)]
             if all(abs(imp) < 1e-5 for imp in recent_improvements):
                 print("\n조기 종료: 최근 5회 개선 없음")
                 break
-    
-    # 5. 최종 결과
-    best_idx = Y_original.argmax()
-    best_X = X[best_idx]
-    
+
+    # ===== Phase 6: 최종 결과 =====
+    # Best CVaR를 가진 x 찾기
+    best_idx = best_cvar_history.index(max(best_cvar_history))
+    if best_idx < n_initial:
+        # 초기 샘플
+        best_X = X_init[best_idx]
+    else:
+        # BO iteration
+        bo_idx = best_idx - n_initial
+        best_X = train_X[n_initial * n_w + bo_idx * n_w]  # 첫 번째 w에서의 x
+
     print("\n" + "="*60)
-    print("Optimization Complete")
+    print("BoRisk Optimization Complete")
+    print(f"Best CVaR: {max(best_cvar_history):.4f}")
+    print(f"Found at iteration: {best_idx + 1}")
     print("="*60)
-    
-    return best_X, best_observed, Y_original
+
+    return best_X, best_cvar_history, train_Y
 
 
 if __name__ == "__main__":
@@ -447,12 +676,13 @@ if __name__ == "__main__":
     import argparse
     import datetime
     
-    parser = argparse.ArgumentParser(description="Risk-aware BO for Welding")
+    parser = argparse.ArgumentParser(description="BoRisk CVaR Optimization for Welding")
     parser.add_argument("--image_dir", default="dataset/images/test", help="Image directory")
     parser.add_argument("--gt_file", default="dataset/ground_truth.json", help="Ground truth JSON")
     parser.add_argument("--yolo_model", default="models/best.pt", help="YOLO model path")
     parser.add_argument("--iterations", type=int, default=20, help="BO iterations")
-    parser.add_argument("--n_initial", type=int, default=15, help="Initial samples")
+    parser.add_argument("--n_initial", type=int, default=10, help="Initial samples")
+    parser.add_argument("--n_w", type=int, default=15, help="w_set size (BoRisk)")
     parser.add_argument("--alpha", type=float, default=0.3, help="CVaR alpha (worst percent)")
     parser.add_argument("--complete_only", action="store_true", help="Use only complete GT images")
     parser.add_argument("--n_augment", type=int, default=0, help="Number of augmentations per image")
@@ -502,13 +732,14 @@ if __name__ == "__main__":
     print(f"\nInitializing YOLO detector...")
     yolo_detector = YOLODetector(args.yolo_model)
     
-    # 최적화 실행
+    # BoRisk 최적화 실행
     best_params, history, all_Y = optimize_risk_aware_bo(
         images_data,
         yolo_detector,
         n_iterations=args.iterations,
         n_initial=args.n_initial,
-        alpha=args.alpha
+        alpha=args.alpha,
+        n_w=args.n_w
     )
     
     # 결과 출력
@@ -536,11 +767,14 @@ if __name__ == "__main__":
     result_file = results_dir / f"bo_cvar_{timestamp}.json"
     
     result_data = {
+        "algorithm": "BoRisk",
         "alpha": args.alpha,
+        "n_w": args.n_w,
         "n_images": len(images_data),
         "n_original": n_original,
         "n_augmented": n_augmented,
         "iterations": args.iterations,
+        "n_initial": args.n_initial,
         "best_params": {
             "edgeThresh1": float(best_params[0]),
             "simThresh1": float(best_params[1]),
@@ -554,6 +788,7 @@ if __name__ == "__main__":
         },
         "history": [float(x) for x in history],
         "final_cvar": float(history[-1]),
+        "initial_cvar": float(history[0]),
         "improvement": float((history[-1] - history[0]) / (history[0] + 1e-6) * 100),
         "complete_only": args.complete_only,
         "n_augment": args.n_augment

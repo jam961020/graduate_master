@@ -177,22 +177,38 @@ observations = evaluate_on_w_set(candidate, w_indices)  # 15개만!
 - BoRisk는 매번 10~20개만 평가 → 10배 빠름
 - 현재 구조로는 실험 불가능 (시간 초과)
 
-### 완료된 작업
-- ✅ 코드 워크스테이션 이식
-- ✅ Python 환경 구성 (torch, opencv, botorch, ultralytics)
-- ✅ 데이터셋 경로 확인 (../dataset/)
-- ✅ 문제점 분석 완료
+### 📋 다음 작업 우선순위
 
-### 진행중 작업
-- 🔄 AirLine 공식 리포지토리에서 Linux 빌드 설치
-- 🔄 평가 메트릭을 직선 방정식 기반으로 변경
-- 🔄 환경 특징에 CLIP, PSNR/SSIM 추가
+#### Priority 1: BoRisk 알고리즘 구현 (Critical - 최우선)
+1. **w_set 샘플링 시스템 구축**
+   - 모든 이미지의 환경 벡터 사전 추출
+   - sample_w_set() 함수 구현 (n_w=15개)
+   - 인덱스 추적 시스템
 
-### 예정 작업
-- 📋 RANSAC 가중치를 최적화 파라미터에 추가 (6D → 9D)
-- 📋 환경 변수를 GP에 통합 (9D → 15D: params + env)
-- 📋 판타지 관측 구현 (BoRisk 알고리즘)
-- 📋 실험 실행 및 결과 분석
+2. **GP 모델 구조 변경**
+   - AppendFeatures input_transform 적용
+   - (x, w) → y 학습 구조로 변경
+   - train_X: [N, 9], train_Y: [N*n_w, 1]
+
+3. **qMFKG 획득 함수 구현**
+   - qMultiFidelityKnowledgeGradient import
+   - CVaR objective 함수 작성
+   - 판타지 샘플링 설정
+
+4. **평가 함수 분리**
+   - evaluate_on_w_set() 함수 구현
+   - objective_function()은 초기화 단계만 사용
+   - BO 루프에서 w_set만 평가
+
+#### Priority 2: 환경 벡터 통합 (High)
+- environment_independent.py 연동
+- 이미지별 환경 특징 추출 및 저장
+- GP 입력으로 환경 벡터 사용
+
+#### Priority 3: 실험 및 검증 (Medium)
+- 소규모 테스트 (n_initial=5, iterations=10)
+- CVaR 값 모니터링 및 개선 확인
+- 전체 실험 실행
 
 ---
 
@@ -202,27 +218,40 @@ observations = evaluate_on_w_set(candidate, w_indices)  # 15개만!
 - 경로: `/home/jeongho/projects/graduate/BO_optimization`
 - Python: 3.11.14 (weld2024_mk2 환경)
 - GPU: CUDA 12.4 available
+- 데이터셋: `../dataset/images/test/` (113장 실제 사용)
 
 ```bash
-# 데이터셋 경로 (상위 디렉토리)
-# ../dataset/images/test/  (119장)
-# ../dataset/ground_truth.json
+# 디버그 테스트 (빠른 검증)
+python optimization.py --iterations 2 --n_initial 3 --alpha 0.3
 
-# 기본 테스트 (5회)
-python optimization.py --iterations 5 --n_initial 10 --alpha 0.3
+# 소규모 테스트 (BoRisk 검증용)
+python optimization.py --iterations 10 --n_initial 5 --alpha 0.3
 
 # 표준 실행 (20회)
-python optimization.py --iterations 20 --n_initial 15 --alpha 0.3
+python optimization.py --iterations 20 --n_initial 10 --alpha 0.3
 
 # 전체 실행 (30회)
-python optimization.py --iterations 30 --n_initial 20 --alpha 0.2
+python optimization.py --iterations 30 --n_initial 15 --alpha 0.2
+
+# 백그라운드 실행 (로그 저장)
+nohup python optimization.py --iterations 20 --n_initial 10 --alpha 0.3 > experiment.log 2>&1 &
+
+# 실행 상태 확인
+tail -f experiment.log
+ps aux | grep "python.*optimization.py"
+
+# 결과 확인
+ls -lh results/
+cat logs/iter_*.json | tail -20
 ```
 
 ---
 
 ## 🔧 주요 파라미터
 
-### AirLine 파라미터 (6D)
+### 최적화 파라미터 (9D)
+
+#### AirLine 파라미터 (6D)
 | Parameter | Range | Default | Description |
 |-----------|-------|---------|-------------|
 | edgeThresh1 | [-23.0, 7.0] | -3.0 | Q 프리셋 엣지 임계값 |
@@ -232,11 +261,28 @@ python optimization.py --iterations 30 --n_initial 20 --alpha 0.2
 | simThresh2 | [0.5, 0.99] | 0.75 | QG 프리셋 유사도 |
 | pixelRatio2 | [0.01, 0.15] | 0.05 | QG 프리셋 픽셀 비율 |
 
-### 환경 벡터 (4D)
-- brightness: [0, 1] - 평균 밝기
-- contrast: [0, 1] - 표준편차/128
-- edge_density: [0, 1] - Canny 엣지 비율
-- texture: [0, 1] - Laplacian 분산
+#### RANSAC 가중치 (3D)
+| Parameter | Range | Default | Description |
+|-----------|-------|---------|-------------|
+| ransac_center_w | [0.0, 1.0] | 0.5 | 중심 거리 가중치 |
+| ransac_length_w | [0.0, 1.0] | 0.3 | 라인 길이 가중치 |
+| ransac_consensus_w | [1, 10] | 5 | Consensus 가중치 |
+
+### 환경 벡터 (6D) - w로 사용
+| Feature | Range | Description |
+|---------|-------|-------------|
+| brightness | [0, 1] | 평균 밝기 (mean/255) |
+| contrast | [0, 1] | 표준편차/128 |
+| edge_density | [0, 1] | Canny 엣지 픽셀 비율 |
+| texture_complexity | [0, 1] | Laplacian 분산 기반 |
+| blur_level | [0, 1] | 블러 정도 |
+| noise_level | [0, 1] | 노이즈 수준 |
+
+### BoRisk 하이퍼파라미터
+- `n_w`: w_set 크기 (기본값: 15)
+- `num_fantasies`: 판타지 샘플 개수 (기본값: 64)
+- `alpha`: CVaR threshold (기본값: 0.3, worst 30%)
+- `n_initial`: 초기 샘플링 개수 (기본값: 10)
 
 ---
 
@@ -381,15 +427,21 @@ md5sum -c file_hashes.txt
 
 ### 핵심 기여
 1. BoRisk 알고리즘의 용접 라인 검출 적용
-2. 10D 파라미터-환경 공간 최적화
+2. 15D 파라미터-환경 공간 최적화 (params 9D + env 6D)
 3. CVaR 기반 강건성 확보
-4. 실시간 처리 가능한 경량화
+4. w_set 샘플링 기반 효율적 평가
+5. 직선 방정식 기반 평가 메트릭
 
 ### 비교 대상
 - Baseline: Grid Search
 - Competitor 1: Standard BO (EI)
 - Competitor 2: Random Search
-- Ours: BoRisk with CVaR
+- Ours: BoRisk with CVaR + qMFKG
+
+### 주요 수식
+- CVaR_α(f(x,w)) = E[f(x,w) | f(x,w) ≤ F^(-1)(α)]
+- GP: f(x,w) ~ GP(μ, k((x,w), (x',w')))
+- qMFKG with fantasy observations
 
 ---
 
@@ -401,4 +453,5 @@ md5sum -c file_hashes.txt
 
 ---
 
-마지막 업데이트: 2025.11.11
+**마지막 업데이트: 2025.11.11 20:30**
+**다음 세션 시작 시 반드시 NEXT_SESSION.md를 먼저 읽으세요!**
