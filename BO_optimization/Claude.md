@@ -12,7 +12,7 @@ Repository: https://github.com/jam961020/graduate_master
 - 논문: ["Bayesian Optimization under Risk" (BoRisk)](https://arxiv.org/abs/2011.05939)
 - **⚠️ 하드코딩으로 우회하지 말고 문제의 본질을 해결하라**
 - **⚠️ 임시 해결책 사용 시 반드시 TODO 주석을 남겨라**
-
+- **⚠️ NEXT_SESSION.md 파일이 본 파일보다 더 자세한 다음 task를 담고있다. 읽고 시작하라**
 ---
 
 ## 🤖 Claude 협업 환경
