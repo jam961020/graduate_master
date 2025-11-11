@@ -39,28 +39,68 @@ graduate_master/
 
 ## 🎯 현재 작업 상태 (2025.11.11)
 
+### ⚠️ 발견된 주요 문제점
+
+#### 1. 환경 변수 미사용 (Critical)
+- `environment_independent.py`에 6D 환경 벡터 구현되어 있으나 **optimization.py에서 전혀 사용 안 함**
+- GP가 (x, z) → y 학습하지 않고 x → y만 학습 (일반 BO와 동일)
+- BoRisk의 핵심인 이미지별 환경 컨디셔닝 누락
+
+#### 2. RANSAC 가중치 미연결 (High)
+- `full_pipeline.py`에 RANSAC 가중치 코드 존재하지만 최적화 대상 아님
+- `optimization.py`의 BOUNDS가 6D만 정의 (9D로 확장 필요)
+- ransac_center_w, ransac_length_w, ransac_consensus_w 하드코딩됨
+
+#### 3. 판타지 관측 미구현 (Critical)
+- **BoRisk의 핵심 알고리즘 완전히 누락**
+- 현재는 단순 Vanilla BO + CVaR 목적함수
+- 필요: CVaR Knowledge Gradient 획득함수, fantasy observation
+
+#### 4. 평가 메트릭 문제 (High)
+- 현재: 끝점 좌표 기반 평가
+- 문제: AirLine의 끝점 검출이 부실함
+- 해결: 직선 방정식 기반 (기울기 + 절편) 평가로 변경 필요
+
+#### 5. 환경 표현 개선 필요 (Medium)
+- 현재 6D 환경 벡터가 이미지 특성 충분히 반영 못함
+- 추가 필요: CLIP 기반 그림자/노이즈 검출, PSNR/SSIM 메트릭
+
+#### 6. 워크스테이션 호환성 (Blocker)
+- `CRG311.pyd` (Windows 전용) → Linux 환경에서 import 실패
+- AirLine 코어 모듈 `crg.desGrow()` 사용 불가
+- 해결: github.com/sair-lab/AirLine의 Linux 빌드 설치 필요
+
 ### 완료된 작업
-- ✅ BoRisk 논문 구현 (10D 최적화)
-- ✅ 한 스텝 = 한 평가 구조 수정
-- ✅ CVaR GP 예측 구현
-- ✅ AirLine 로깅 제거 (monkey patching)
-- ✅ 환경 특징 자동 추출 (4D)
+- ✅ 코드 워크스테이션 이식
+- ✅ Python 환경 구성 (torch, opencv, botorch, ultralytics)
+- ✅ 데이터셋 경로 확인 (../dataset/)
+- ✅ 문제점 분석 완료
 
 ### 진행중 작업
-- 🔄 획득 함수 튜닝 (CVaR Knowledge Gradient)
-- 🔄 GP 하이퍼파라미터 최적화
-- 🔄 평가 메트릭 가중치 조정
+- 🔄 AirLine 공식 리포지토리에서 Linux 빌드 설치
+- 🔄 평가 메트릭을 직선 방정식 기반으로 변경
+- 🔄 환경 특징에 CLIP, PSNR/SSIM 추가
 
 ### 예정 작업
-- 📋 RANSAC 가중치 파라미터 추가 (6D → 8D)
-- 📋 CLIP 기반 환경 표현 (4D → latent)
-- 📋 Multi-fidelity BO 구현
+- 📋 RANSAC 가중치를 최적화 파라미터에 추가 (6D → 9D)
+- 📋 환경 변수를 GP에 통합 (9D → 15D: params + env)
+- 📋 판타지 관측 구현 (BoRisk 알고리즘)
+- 📋 실험 실행 및 결과 분석
 
 ---
 
 ## 🚀 빠른 실행 명령어
 
+### 워크스테이션 환경
+- 경로: `/home/jeongho/projects/graduate/BO_optimization`
+- Python: 3.11.14 (weld2024_mk2 환경)
+- GPU: CUDA 12.4 available
+
 ```bash
+# 데이터셋 경로 (상위 디렉토리)
+# ../dataset/images/test/  (119장)
+# ../dataset/ground_truth.json
+
 # 기본 테스트 (5회)
 python optimization.py --iterations 5 --n_initial 10 --alpha 0.3
 
@@ -95,19 +135,36 @@ python optimization.py --iterations 30 --n_initial 20 --alpha 0.2
 
 ## 🐛 자주 발생하는 문제
 
-### 1. AirLine 로깅 과다
+### 1. CRG311 import 실패 (Linux)
+```bash
+# 증상: ModuleNotFoundError: No module named 'CRG311'
+# 원인: CRG311.pyd는 Windows 전용
+# 해결: AirLine 공식 리포에서 Linux 빌드 설치
+git clone https://github.com/sair-lab/AirLine.git
+cd AirLine
+# 설치 방법은 리포의 README 참조
+```
+
+### 2. NumPy 버전 충돌
+```bash
+# 증상: sklearn import 시 NumPy 2.x 에러
+# 해결: NumPy 1.x로 다운그레이드
+pip install "numpy>=1.23,<2.0" --force-reinstall
+```
+
+### 3. AirLine 로깅 과다
 ```python
 # 해결: monkey patching
 full_pipeline.detect_lines_in_roi = quiet_detect_lines_in_roi
 ```
 
-### 2. GP 학습 실패
+### 4. GP 학습 실패
 ```python
 # 해결: Y 정규화
 Y_normalized = (Y - Y.mean()) / (Y.std() + 1e-6)
 ```
 
-### 3. 획득 함수 0 반환
+### 5. 획득 함수 0 반환
 ```python
 # 해결: 초기 샘플 증가, 탐험 파라미터 조정
 n_initial = 20  # 15 → 20
