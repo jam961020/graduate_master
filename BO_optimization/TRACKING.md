@@ -8,12 +8,14 @@
 
 ## 📋 현재 우선순위
 
-1. 🔴 **CRG311 Linux 빌드 설치** (Blocker) - AirLine 없이는 아무것도 못함
-2. 🟡 **평가 메트릭 변경** (High) - 직선 방정식 기반으로 전환
-3. 🟡 **환경 특징 강화** (High) - CLIP, PSNR/SSIM 추가
-4. 🟡 **RANSAC 가중치 추가** (High) - 6D → 9D
-5. 🔴 **판타지 관측 구현** (Critical) - BoRisk 알고리즘
-6. 🟢 **환경 변수 통합** (Medium) - GP에 (x, z) 입력
+1. ✅ **CRG311 Linux 빌드 설치** (완료) - 2025.11.11 19:00
+2. ✅ **평가 메트릭 변경** (완료) - 직선 방정식 기반으로 전환 2025.11.11 19:28
+3. ✅ **RANSAC 가중치 추가** (완료) - 6D → 9D 확장 2025.11.11 19:28
+4. ✅ **로깅 최적화** (완료) - 토큰 절약, 파일 저장 2025.11.11 19:28
+5. 🔄 **테스트 실행 중** (진행중) - 수정된 코드 검증
+6. 🟡 **환경 특징 강화** (대기) - CLIP, PSNR/SSIM 추가
+7. 🔴 **판타지 관측 구현** (대기) - BoRisk 알고리즘
+8. 🟢 **환경 변수 통합** (대기) - GP에 (x, z) 입력
 
 ---
 
@@ -346,36 +348,49 @@ def add_image_quality_metrics(image, reference=None):
 
 ---
 
-## 🎯 다음 단계
+## 🎯 현재 작업 (2025.11.11 19:20)
 
-### Step 1: AirLine Linux 설치
-- [ ] github.com/sair-lab/AirLine clone
-- [ ] README 확인 및 빌드
-- [ ] `import CRG311` 테스트
+### 우선순위: 결정변수 업데이트 + 평가 메트릭 수정
 
-### Step 2: 평가 메트릭 변경
+#### Step 1: 평가 메트릭 변경 [진행중]
+- [x] AirLine Linux 설치 완료
 - [ ] `line_equation_evaluation()` 함수 구현
 - [ ] `simple_line_evaluation()` 대체
 - [ ] 테스트 실행
 
-### Step 3: 환경 특징 강화
+#### Step 2: RANSAC 가중치 추가 [진행중]
+- [ ] BOUNDS를 6D → 9D로 확장
+- [ ] `objective_function()`에서 3개 파라미터 추가
+- [ ] full_pipeline.py 연결 확인
+- [ ] 테스트 실행
+
+#### Step 3: 로그 정리 [진행중]
+- [ ] 불필요한 print문 제거
+- [ ] 진행상황만 간결하게 표시
+- [ ] iteration별 로그 파일 저장
+- [ ] 검증 로직 확인 (각 step당 1회만)
+
+#### Step 4: 실험 실행
+- [ ] 수정된 코드로 빠른 테스트 (3-5 iterations)
+- [ ] 결과 확인 (CVaR > 0.01 기대)
+- [ ] 성공 시: 긴 실험 (20-30 iterations)
+- [ ] 시각화 생성
+
+### 이후 작업
+
+#### Step 5: 환경 특징 강화
 - [ ] CLIP 설치 및 테스트
 - [ ] `extract_clip_features()` 구현
 - [ ] PSNR/SSIM 메트릭 추가
 - [ ] `environment_independent.py` 업데이트
 
-### Step 4: RANSAC 가중치 추가
-- [ ] BOUNDS를 6D → 9D로 확장
-- [ ] `objective_function()`에서 3개 파라미터 추가
-- [ ] 테스트 실행
-
-### Step 5: 환경 변수 통합
+#### Step 6: 환경 변수 통합
 - [ ] 이미지별 환경 벡터 추출 및 저장
 - [ ] BOUNDS를 9D → 15D로 확장
 - [ ] GP 입력을 (x, z)로 변경
 - [ ] 테스트 실행
 
-### Step 6: 판타지 관측 구현
+#### Step 7: 판타지 관측 구현
 - [ ] BoRisk 논문 알고리즘 재확인
 - [ ] CVaR Knowledge Gradient 획득함수 구현
 - [ ] Fantasy observation 구현
@@ -412,8 +427,77 @@ def add_image_quality_metrics(image, reference=None):
     └── CRG/extractC/CRGandLP.cpp  # C++ 소스
 ```
 
-**다음:** AirLine 공식 GitHub에서 Linux 빌드 설치
+**다음:** 평가 메트릭 + RANSAC 가중치 수정 후 실험
 
 ---
 
-**마지막 업데이트:** 2025.11.11 19:00
+## 📝 작업 로그 (계속)
+
+### 2025.11.11 19:15 - Git Push 완료
+
+**완료:**
+- ✅ Git push 성공 (3개 커밋)
+- ✅ 시각화 모듈 생성 (4종 그래프)
+- ✅ 빠른 테스트 실행 (CVaR=0.0011, 낮음)
+
+**문제 발견:**
+- CVaR 값이 매우 낮음 (0.0011) → 라인 검출 실패
+- 끝점 기반 평가의 한계 확인
+
+**결정:**
+- 평가 메트릭을 직선 방정식 기반으로 변경
+- RANSAC 가중치를 결정변수에 추가 (6D → 9D)
+- 로그 정리 (토큰 낭비 방지)
+
+---
+
+---
+
+### 2025.11.11 19:28 - 평가 메트릭 + RANSAC 완료
+
+**완료:**
+- ✅ 평가 메트릭 변경: 끝점 → 직선 방정식 기반
+  - `line_equation_evaluation()` 함수 추가
+  - Ax + By + C = 0 형식으로 직선 표현
+  - 방향 유사도 (법선 벡터 내적) + 평행 거리 계산
+  - 가중치: direction 60%, distance 40%
+
+- ✅ RANSAC 가중치 추가: 6D → 9D 확장
+  - BOUNDS 업데이트: [6D] → [9D]
+  - Sobol 엔진 차원 수정: dimension=6 → 9
+  - objective_function에 RANSAC 파라미터 전달
+  - 결과 저장 시 9D 모두 포함
+
+- ✅ 로깅 최적화
+  - 초기화 단계: 단일 라인으로 축약
+  - 반복 단계: 핵심 정보만 출력
+  - 상세 로그를 logs/iter_XXX.json 파일로 저장
+  - 토큰 낭비 최소화
+
+- ✅ 평가 로직 검증
+  - objective_function은 각 스텝당 정확히 1회 호출
+  - CVaR 계산은 직접 평가 사용 (GP 예측 아님)
+  - 113개 이미지 전체 평가 후 worst 30% 평균
+
+**수정된 파일:**
+- `optimization.py`:
+  - `line_equation_evaluation()` 함수 추가 (39-116라인)
+  - BOUNDS 9D 확장 (33-36라인)
+  - Sobol 9D 적용 (296라인)
+  - objective_function에 RANSAC 추가 (238-240라인)
+  - 로깅 정리 (305, 328-332, 371-423라인)
+  - 반복별 로그 파일 저장 (378-400라인)
+  - 결과 저장 9D (539-541라인)
+  - 결과 출력 9D (513-515라인)
+
+**현재 상태:**
+- 🔄 테스트 실행 중 (Background ID: f28d36)
+- 명령: 3 init + 2 iter, α=0.3
+- 로그: new_test.log
+
+**다음:**
+- 테스트 결과 확인
+- CVaR 개선 확인 (이전 0.0011 대비)
+- 성공 시 full experiment (20-30 iterations)
+
+**마지막 업데이트:** 2025.11.11 19:28

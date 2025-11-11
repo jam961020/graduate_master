@@ -29,28 +29,29 @@ from yolo_detector import YOLODetector
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DTYPE = torch.double
 
+# 9D: AirLine 파라미터 (6D) + RANSAC 가중치 (3D)
 BOUNDS = torch.tensor([
-    [-23.0, 0.5, 0.01, -23.0, 0.5, 0.01],
-    [7.0, 0.99, 0.15, 7.0, 0.99, 0.15]
+    [-23.0, 0.5, 0.01, -23.0, 0.5, 0.01, 0.0, 0.0, 1],
+    [7.0, 0.99, 0.15, 7.0, 0.99, 0.15, 1.0, 1.0, 10]
 ], dtype=DTYPE, device=DEVICE)
 
 
-def simple_line_evaluation(detected_coords, gt_coords, image_size=(640, 480), 
-                          angle_weight=0.7, distance_weight=0.3):
+def line_equation_evaluation(detected_coords, gt_coords, image_size=(640, 480),
+                            direction_weight=0.6, distance_weight=0.4):
     """
-    선분 기반 평가: 각도 유사도 + 거리 유사도
-    
+    직선 방정식 기반 평가: 방향 유사도 + 평행 거리
+    끝점이 아닌 직선 자체의 방정식으로 평가
+
     Args:
         detected_coords: 검출된 좌표 dict
         gt_coords: GT 좌표 dict
         image_size: (width, height)
-        angle_weight: 각도 가중치 (0.7 = 70%)
-        distance_weight: 거리 가중치 (0.3 = 30%)
-    
+        direction_weight: 방향 가중치
+        distance_weight: 거리 가중치
+
     Returns:
         score: float [0, 1]
     """
-    # 3개 선분: longi_left, longi_right, collar_left
     line_definitions = [
         ('longi_left', 'longi_left_lower_x', 'longi_left_lower_y',
                       'longi_left_upper_x', 'longi_left_upper_y'),
@@ -59,61 +60,58 @@ def simple_line_evaluation(detected_coords, gt_coords, image_size=(640, 480),
         ('collar_left', 'collar_left_lower_x', 'collar_left_lower_y',
                        'collar_left_upper_x', 'collar_left_upper_y')
     ]
-    
+
     diagonal = np.sqrt(image_size[0]**2 + image_size[1]**2)
-    distance_threshold = diagonal * 0.02  # 2% (조금 완화)
-    
+    distance_threshold = diagonal * 0.05  # 5%
+
     line_scores = []
-    
+
     for name, x1_key, y1_key, x2_key, y2_key in line_definitions:
-        # GT 선분
         gt_x1 = gt_coords.get(x1_key, 0)
         gt_y1 = gt_coords.get(y1_key, 0)
         gt_x2 = gt_coords.get(x2_key, 0)
         gt_y2 = gt_coords.get(y2_key, 0)
-        
-        # 검출 선분
+
         det_x1 = detected_coords.get(x1_key, 0)
         det_y1 = detected_coords.get(y1_key, 0)
         det_x2 = detected_coords.get(x2_key, 0)
         det_y2 = detected_coords.get(y2_key, 0)
-        
-        # GT가 없으면 스킵
+
         if gt_x1 == 0 and gt_y1 == 0 and gt_x2 == 0 and gt_y2 == 0:
             continue
-        
-        # 검출이 없으면 0점
+
         if det_x1 == 0 and det_y1 == 0 and det_x2 == 0 and det_y2 == 0:
             line_scores.append(0.0)
             continue
-        
-        # 1. 각도 유사도
-        gt_angle = np.arctan2(gt_y2 - gt_y1, gt_x2 - gt_x1)
-        det_angle = np.arctan2(det_y2 - det_y1, det_x2 - det_x1)
-        
-        angle_diff = abs(gt_angle - det_angle)
-        if angle_diff > np.pi:
-            angle_diff = 2 * np.pi - angle_diff
-        
-        angle_similarity = 1.0 - (angle_diff / np.pi)
-        
-        # 2. 거리 유사도
-        dist_p1 = np.sqrt((det_x1 - gt_x1)**2 + (det_y1 - gt_y1)**2)
-        dist_p2 = np.sqrt((det_x2 - gt_x2)**2 + (det_y2 - gt_y2)**2)
-        avg_distance = (dist_p1 + dist_p2) / 2
-        
-        distance_similarity = max(0.0, 1.0 - (avg_distance / distance_threshold))
-        
+
+        # 직선 방정식: Ax + By + C = 0
+        def to_line_eq(x1, y1, x2, y2):
+            A = y2 - y1
+            B = x1 - x2
+            C = x2*y1 - x1*y2
+            norm = np.sqrt(A**2 + B**2) + 1e-6
+            return A/norm, B/norm, C/norm
+
+        A_gt, B_gt, C_gt = to_line_eq(gt_x1, gt_y1, gt_x2, gt_y2)
+        A_det, B_det, C_det = to_line_eq(det_x1, det_y1, det_x2, det_y2)
+
+        # 1. 방향 유사도 (법선 벡터 내적)
+        direction_sim = abs(A_gt*A_det + B_gt*B_det)  # [0, 1]
+
+        # 2. 평행 거리 (GT 직선의 중점에서 검출 직선까지)
+        mid_x = (gt_x1 + gt_x2) / 2
+        mid_y = (gt_y1 + gt_y2) / 2
+        parallel_dist = abs(A_det*mid_x + B_det*mid_y + C_det)
+
+        distance_sim = max(0.0, 1.0 - (parallel_dist / distance_threshold))
+
         # 3. 종합 점수
-        line_score = (angle_weight * angle_similarity + 
-                     distance_weight * distance_similarity)
-        
+        line_score = direction_weight * direction_sim + distance_weight * distance_sim
         line_scores.append(line_score)
-    
+
     if len(line_scores) == 0:
         return 0.0
-    
-    # 평균 점수
+
     return float(np.mean(line_scores))
 
 
@@ -218,15 +216,15 @@ def augment_image(image, n_augment=5):
 
 def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
     """
-    CVaR 목적 함수 (수정됨)
-    
+    CVaR 목적 함수
+
     Args:
-        X: [1, 6] 파라미터
+        X: [1, 9] 파라미터 (AirLine 6D + RANSAC 3D)
         images_data: 전체 이미지 데이터
         yolo_detector: YOLO 검출기
         alpha: CVaR의 α (worst α% of cases)
         verbose: 디버깅 출력
-    
+
     Returns:
         cvar_score: float
     """
@@ -237,55 +235,41 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
         'edgeThresh2': X[0, 3].item(),
         'simThresh2': X[0, 4].item(),
         'pixelRatio2': X[0, 5].item(),
+        'ransac_center_w': X[0, 6].item(),
+        'ransac_length_w': X[0, 7].item(),
+        'ransac_consensus_w': int(X[0, 8].item()),
     }
-    
+
     scores = []
-    
-    # 진행 표시 (점만)
-    if verbose:
-        print("  Evaluating", end="")
-    
+
     for i, img_data in enumerate(images_data):
         try:
             image = img_data['image']
             gt_coords = img_data['gt_coords']
-            
-            # 파이프라인 실행
+
             detected_coords = detect_with_full_pipeline(image, params, yolo_detector)
-            
-            # 평가
+
             h, w = image.shape[:2]
-            score = simple_line_evaluation(detected_coords, gt_coords, image_size=(w, h))
+            score = line_equation_evaluation(detected_coords, gt_coords, image_size=(w, h))
             scores.append(score)
-            
-            # 진행 점 표시
-            if verbose and i % max(1, len(images_data) // 10) == 0:
-                print(".", end="", flush=True)
-            
+
         except KeyboardInterrupt:
             raise
-        except Exception as e:
-            if verbose and i == 0:  # 첫 번째 에러만 표시
-                print(f"\n  [WARN] Evaluation error: {e}")
+        except Exception:
             scores.append(0.0)
-    
-    if verbose:
-        print(" Done")
-    
+
     scores = np.array(scores)
-    
-    # CVaR 계산 (수정됨)
+
     if len(scores) == 0:
         return 0.0
-    
+
     n_worst = max(1, int(len(scores) * alpha))
     worst_scores = np.sort(scores)[:n_worst]
     cvar = np.mean(worst_scores)
-    
+
     if verbose:
-        print(f"  Scores: mean={scores.mean():.3f}, min={scores.min():.3f}, max={scores.max():.3f}")
-        print(f"  CVaR (α={alpha}, n={n_worst}): {cvar:.3f}")
-    
+        print(f"CVaR={cvar:.4f} (mean={scores.mean():.3f}, min={scores.min():.3f}, max={scores.max():.3f})")
+
     return cvar
 
 
@@ -308,18 +292,17 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     
     # 1. 초기 샘플링
     print(f"\n[Phase 1] Initial sampling ({n_initial} samples)")
-    
-    sobol = SobolEngine(dimension=6, scramble=True)
+
+    sobol = SobolEngine(dimension=9, scramble=True)
     X_init = sobol.draw(n_initial).to(dtype=DTYPE, device=DEVICE)
     X_init = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * X_init
     
     Y_init = []
     for i, x in enumerate(X_init):
-        print(f"\nInitial {i+1}/{n_initial}:")
-        score = objective_function(x.unsqueeze(0), images_data, yolo_detector, 
-                                  alpha=alpha, verbose=True)
+        score = objective_function(x.unsqueeze(0), images_data, yolo_detector,
+                                  alpha=alpha, verbose=False)
         Y_init.append(score)
-        print(f"  CVaR={score:.4f}")
+        print(f"Init {i+1}/{n_initial}: CVaR={score:.4f}")
     
     Y_init = torch.tensor(Y_init, dtype=DTYPE, device=DEVICE).unsqueeze(-1)
     
@@ -335,23 +318,25 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     
     Y_normalized = (Y_init - Y_mean) / Y_std
     
-    print(f"\nInitialization complete:")
-    print(f"  Y stats: mean={Y_mean:.4f}, std={Y_std:.4f}")
-    print(f"  Best initial CVaR: {Y_init.max().item():.4f}")
-    
+    print(f"Init complete: mean={Y_mean:.4f}, std={Y_std:.4f}, best={Y_init.max().item():.4f}")
+
     # 3. 초기 GP 학습 (중요!)
     X = X_init
     Y = Y_normalized
     Y_original = Y_init
-    
-    print("\n[Phase 2] Initial GP training")
+
+    print(f"\n[Phase 2] GP training")
     gp = SingleTaskGP(X, Y)
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
     fit_gpytorch_mll(mll)
-    print(f"  Noise level: {gp.likelihood.noise.item():.6f}")
+    print(f"GP noise level: {gp.likelihood.noise.item():.6f}")
     
     best_observed = [Y_original.max().item()]
-    
+
+    # 로그 디렉토리 생성
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+
     # 4. BO 루프
     print(f"\n[Phase 3] BO iterations")
     print("-"*60)
@@ -380,17 +365,40 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         except Exception as e:
             print(f"\n⚠️ Acquisition optimization failed: {e}")
             # 폴백: 랜덤 샘플링
-            candidate = torch.rand(1, 6, dtype=DTYPE, device=DEVICE)
+            candidate = torch.rand(1, 9, dtype=DTYPE, device=DEVICE)
             candidate = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * candidate
             acq_value = torch.tensor(0.0)
         
-        # 4.3 평가
-        print(f"\nIter {iteration+1}/{n_iterations} ({acq_name}):")
-        new_y = objective_function(candidate, images_data, yolo_detector, 
-                                  alpha=alpha, verbose=True)
-        
+        # 4.3 평가 (단 1회만 실행됨)
+        new_y = objective_function(candidate, images_data, yolo_detector,
+                                  alpha=alpha, verbose=False)
+
         # 정규화
         new_y_normalized = (new_y - Y_mean.item()) / (Y_std.item() + 1e-6)
+
+        # 4.3.1 반복마다 로그 저장
+        iter_log = {
+            "iteration": iteration + 1,
+            "acq_function": acq_name,
+            "acq_value": float(acq_value.item()),
+            "parameters": {
+                "edgeThresh1": float(candidate[0, 0].item()),
+                "simThresh1": float(candidate[0, 1].item()),
+                "pixelRatio1": float(candidate[0, 2].item()),
+                "edgeThresh2": float(candidate[0, 3].item()),
+                "simThresh2": float(candidate[0, 4].item()),
+                "pixelRatio2": float(candidate[0, 5].item()),
+                "ransac_center_w": float(candidate[0, 6].item()),
+                "ransac_length_w": float(candidate[0, 7].item()),
+                "ransac_consensus_w": int(candidate[0, 8].item()),
+            },
+            "cvar": float(new_y),
+            "cvar_normalized": float(new_y_normalized)
+        }
+
+        log_file = log_dir / f"iter_{iteration+1:03d}.json"
+        with open(log_file, 'w') as f:
+            json.dump(iter_log, f, indent=2)
         
         # 4.4 데이터 추가
         X = torch.cat([X, candidate])
@@ -412,9 +420,8 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         
         best_observed.append(Y_original.max().item())
         improvement = best_observed[-1] - best_observed[-2]
-        
-        print(f"  CVaR={new_y:.4f}, Best={best_observed[-1]:.4f} ({improvement:+.4f})")
-        print(f"  Acq value: {acq_value.item():.6f}")
+
+        print(f"Iter {iteration+1}/{n_iterations} ({acq_name}): CVaR={new_y:.4f}, Best={best_observed[-1]:.4f} ({improvement:+.4f})")
         
         # 4.6 조기 종료 체크
         if iteration > 10:
@@ -498,12 +505,15 @@ if __name__ == "__main__":
     
     # 결과 출력
     print("\n최적 파라미터:")
-    print(f"  edgeThresh1:  {best_params[0]:7.2f}")
-    print(f"  simThresh1:   {best_params[1]:7.4f}")
-    print(f"  pixelRatio1:  {best_params[2]:7.4f}")
-    print(f"  edgeThresh2:  {best_params[3]:7.2f}")
-    print(f"  simThresh2:   {best_params[4]:7.4f}")
-    print(f"  pixelRatio2:  {best_params[5]:7.4f}")
+    print(f"  edgeThresh1:        {best_params[0]:7.2f}")
+    print(f"  simThresh1:         {best_params[1]:7.4f}")
+    print(f"  pixelRatio1:        {best_params[2]:7.4f}")
+    print(f"  edgeThresh2:        {best_params[3]:7.2f}")
+    print(f"  simThresh2:         {best_params[4]:7.4f}")
+    print(f"  pixelRatio2:        {best_params[5]:7.4f}")
+    print(f"  ransac_center_w:    {best_params[6]:7.4f}")
+    print(f"  ransac_length_w:    {best_params[7]:7.4f}")
+    print(f"  ransac_consensus_w: {int(best_params[8]):7d}")
     
     print(f"\n성능:")
     print(f"  최종 CVaR: {history[-1]:.4f}")
@@ -530,6 +540,9 @@ if __name__ == "__main__":
             "edgeThresh2": float(best_params[3]),
             "simThresh2": float(best_params[4]),
             "pixelRatio2": float(best_params[5]),
+            "ransac_center_w": float(best_params[6]),
+            "ransac_length_w": float(best_params[7]),
+            "ransac_consensus_w": int(best_params[8]),
         },
         "history": [float(x) for x in history],
         "final_cvar": float(history[-1]),
