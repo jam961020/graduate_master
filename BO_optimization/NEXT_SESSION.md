@@ -34,22 +34,51 @@ cat results/bo_cvar_*.json | tail -1
 
 ## 🔴 **최우선 작업: CVaR 계산 방식 수정**
 
-### 문제점
-현재 `optimization.py`의 CVaR 계산은 **직접 평가 방식**:
+### 문제점 (CRITICAL!)
+현재 코드는 **BoRisk 알고리즘과 완전히 다름**:
+
+**현재 잘못된 구현**:
 ```python
 # optimization.py:217-273
 def objective_function(X, images_data, yolo_detector, alpha=0.3):
+    # 문제 1: 매번 모든 이미지(113개) 평가 → 매우 느림!
     scores = []
     for img_data in images_data:
-        # 실제로 모든 이미지에 대해 평가 실행
         score = line_equation_evaluation(...)
         scores.append(score)
 
-    # 직접 계산된 scores에서 CVaR
-    n_worst = max(1, int(len(scores) * alpha))
-    worst_scores = np.sort(scores)[:n_worst]
-    cvar = np.mean(worst_scores)
+    # 문제 2: 직접 CVaR 계산 (GP 사용 안 함)
+    cvar = np.mean(np.sort(scores)[:n_worst])
     return cvar
+```
+
+**BoRisk 올바른 방식** (BoTorch 튜토리얼 기반):
+```python
+# 1. 환경 변수 처리
+# - 각 이미지 = 환경 w
+# - w_set에서 n_w개 샘플링 (예: 10개)
+w_set = sample_images(images_data, n_w=10)
+
+# 2. GP 모델: (x, w) → y
+model = SingleTaskGP(
+    train_X,  # [N, 9+6] = params 9D + env 6D
+    train_Y,
+    input_transform=AppendFeatures(feature_set=w_set)
+)
+
+# 3. 획득 함수: qMultiFidelityKnowledgeGradient + CVaR
+acqf = qMultiFidelityKnowledgeGradient(
+    model=model,
+    num_fantasies=NUM_FANTASIES,
+    objective=CVaR(alpha=0.3, n_w=n_w)
+)
+
+# 4. 매 iteration:
+#    - 하나의 x 선택
+#    - w_set의 몇 개 이미지만 평가 (10개, 113개 아님!)
+#    - GP 업데이트
+candidate = optimize_acqf(acqf, bounds)
+observations = evaluate_on_w_samples(candidate, w_set)  # 10개만!
 ```
 
 ### BoRisk 논문에서 요구하는 방식

@@ -456,6 +456,7 @@ if __name__ == "__main__":
     parser.add_argument("--alpha", type=float, default=0.3, help="CVaR alpha (worst percent)")
     parser.add_argument("--complete_only", action="store_true", help="Use only complete GT images")
     parser.add_argument("--n_augment", type=int, default=0, help="Number of augmentations per image")
+    parser.add_argument("--max_images", type=int, default=None, help="Limit number of images (for fast testing)")
     args = parser.parse_args()
     
     # GT 파일 확인
@@ -481,11 +482,18 @@ if __name__ == "__main__":
     if len(images_data) == 0:
         print("[ERROR] 로드된 이미지가 없습니다!")
         sys.exit(1)
-    
+
+    # 이미지 개수 제한 (빠른 테스트용)
+    if args.max_images is not None and args.max_images < len(images_data):
+        import random
+        random.seed(42)
+        images_data = random.sample(images_data, args.max_images)
+        print(f"[INFO] Limited to {args.max_images} images for fast testing")
+
     # 원본과 증강 이미지 개수 출력
     n_original = sum(1 for img in images_data if not img.get('is_augmented', False))
     n_augmented = len(images_data) - n_original
-    
+
     print(f"Loaded {n_original} original images")
     if n_augmented > 0:
         print(f"Generated {n_augmented} augmented images (total: {len(images_data)})")
