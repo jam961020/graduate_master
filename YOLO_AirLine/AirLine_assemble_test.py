@@ -53,9 +53,16 @@ YOLO_MODEL = None
 # AirLine 모델 (Coordinate Detector.py와 완전히 동일한 방식)
 THETA_RES, K_SIZE = 6, 9
 
+# ===== DEVICE 설정: CRG311 안정성을 위해 CPU 강제 가능 =====
+# GPU 사용 시 CRG311.desGrow() segfault 발생 가능성 있음
+# 환경변수 AIRLINE_FORCE_CPU=1 설정 시 CPU 강제 사용
+USE_GPU = os.environ.get('AIRLINE_FORCE_CPU', '0') != '1'
+DEVICE = torch.device('cuda' if torch.cuda.is_available() and USE_GPU else 'cpu')
+print(f"[AirLine] Using device: {DEVICE} (USE_GPU={USE_GPU})")
+
 def build_oridet():
     """OrientationDetector 빌드 함수"""
-    thetaN = nn.Conv2d(1, THETA_RES, K_SIZE, 1, K_SIZE // 2, bias=False).cuda()
+    thetaN = nn.Conv2d(1, THETA_RES, K_SIZE, 1, K_SIZE // 2, bias=False).to(DEVICE)
     for i in range(THETA_RES):
         kernel = np.zeros((K_SIZE, K_SIZE))
         angle = i * 180 / THETA_RES
@@ -76,11 +83,11 @@ def _init_airline_models():
     if ORI_DET is None:
         ORI_DET = build_oridet()
     if EDGE_DET is None:
-        EDGE_DET = DexiNed().cuda()
+        EDGE_DET = DexiNed().to(DEVICE)
         # 모델 가중치 로드
         dexi_path = os.path.join(os.path.dirname(__file__), "dexi.pth")
         if os.path.exists(dexi_path):
-            edge_state_dict = torch.load(dexi_path, map_location='cuda:0')
+            edge_state_dict = torch.load(dexi_path, map_location=DEVICE)
             EDGE_DET.load_state_dict(edge_state_dict)
 
 AL_CFG = dict(edgeThresh=0, simThresh=0.9, pixelNumThresh=10)
@@ -581,7 +588,7 @@ def run_airline(roi_bgr: np.ndarray, airline_config: dict):
     scale_y = H0 / resized_height
 
     rx1_resized = np.ascontiguousarray(rx1_resized)
-    x1 = torch.tensor(rx1_resized, dtype=torch.float32).cuda() / 255.0
+    x1 = torch.tensor(rx1_resized, dtype=torch.float32).to(DEVICE) / 255.0
     x1 = x1.permute(2, 0, 1)
 
     with torch.no_grad():
@@ -596,15 +603,53 @@ def run_airline(roi_bgr: np.ndarray, airline_config: dict):
     ODes = ORI_DET(edgeDetection)
     ODes = torch.nn.functional.normalize(ODes - ODes.mean(1, keepdim=True), p=2.0, dim=1)
 
+    # ===== CRITICAL FIX: CRG311.desGrow() segfault 방지 (CURSOR 분석 기반) =====
+
+    # 1. ODes를 C-연속 float32 배열로 강제 변환
+    ODes_np = ODes[0].detach().contiguous().cpu().numpy()
+    ODes_np = np.ascontiguousarray(ODes_np, dtype=np.float32)
+
+    # 2. 입력 배열 C-연속성 강제 + 검증
+    edgeNp_binary = np.ascontiguousarray(edgeNp_binary, dtype=np.uint8)
+
+    # 3. outMap C-연속 보장
     outMap = np.zeros_like(edgeNp, dtype=np.uint8)
     outMap = np.expand_dims(outMap, 2).repeat(3, axis=2)
-    out = np.zeros((3000, 2, 3), dtype=np.float32)
+    outMap = np.ascontiguousarray(outMap, dtype=np.uint8)
 
-    rawLineNum = crg.desGrow(
-        outMap, edgeNp_binary, ODes[0].detach().cpu().numpy(), out,
-        airline_config["simThresh"], airline_config["pixelNumThresh"],
-        TMP1, TMP2, TMP3, THETA_RES
-    )
+    # 4. 출력 버퍼 C-order로 명시적 생성
+    out = np.empty((3000, 2, 3), dtype=np.float32, order='C')
+
+    # 5. C-연속성 검증 (assert)
+    assert ODes_np.flags['C_CONTIGUOUS'], "ODes_np must be C-contiguous"
+    assert ODes_np.dtype == np.float32, "ODes_np must be float32"
+    assert edgeNp_binary.flags['C_CONTIGUOUS'], "edgeNp_binary must be C-contiguous"
+    assert edgeNp_binary.dtype == np.uint8, "edgeNp_binary must be uint8"
+    assert outMap.flags['C_CONTIGUOUS'], "outMap must be C-contiguous"
+    assert outMap.dtype == np.uint8, "outMap must be uint8"
+    assert out.flags['C_CONTIGUOUS'], "out must be C-contiguous"
+    assert out.dtype == np.float32, "out must be float32"
+
+    # 6. 버퍼 오버런 방지: pixelNumThresh 축소 (CRITICAL!)
+    # 원본 pixelNumThresh가 너무 크면 피처 폭발 → 버퍼 오버런
+    safe_pixel_thresh = min(airline_config["pixelNumThresh"],
+                           int(np.sqrt(edgeNp.shape[0]**2 + edgeNp.shape[1]**2) * 0.03))
+
+    # 7. desGrow 호출 (방어 로직 완료)
+    try:
+        rawLineNum = crg.desGrow(
+            outMap, edgeNp_binary, ODes_np, out,
+            airline_config["simThresh"],
+            safe_pixel_thresh,  # ← 축소된 값 사용
+            TMP1, TMP2, TMP3, THETA_RES
+        )
+    except Exception as e:
+        print(f"[ERROR] CRG311.desGrow crashed: {e}")
+        print(f"  Image shape: {edgeNp.shape}")
+        print(f"  pixelNumThresh: {airline_config['pixelNumThresh']} → {safe_pixel_thresh}")
+        import traceback
+        traceback.print_exc()
+        return np.empty((0, 4), float)  # 빈 결과 반환
     rawLineNum = min(rawLineNum, 3000)
 
     if rawLineNum == 0: return np.empty((0, 4), float)
