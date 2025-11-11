@@ -47,8 +47,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__))) # YOLO_AirLine 폴더
 sys.path.append(r"C:\Users\user\Desktop\study\task\weld2025\AirLine\build")
 
 # ────────────────── 1. 전역 변수 및 모델 초기화 ─────────────────────
-# YOLO 모델
-YOLO_MODEL = YOLO(r".\YOLO_AirLine\best_250722.pt")
+# YOLO 모델 (lazy initialization으로 변경)
+YOLO_MODEL = None
 
 # AirLine 모델 (Coordinate Detector.py와 완전히 동일한 방식)
 THETA_RES, K_SIZE = 6, 9
@@ -66,13 +66,22 @@ def build_oridet():
         thetaN.weight.data[i] = torch.tensor(kernel, dtype=torch.float32)
     return thetaN
 
-ORI_DET = build_oridet()
-EDGE_DET = DexiNed().cuda()
+# Lazy initialization (모듈 import 시가 아닌 실제 사용 시 초기화)
+ORI_DET = None
+EDGE_DET = None
 
-# [중요] 원본과 동일하게 상위 폴더에서 실행하는 것을 가정하고 모델 경로 설정
-# 또한 .eval()을 호출하지 않음으로써 "블랙 매직"을 유지합니다.
-edge_state_dict = torch.load(r".\YOLO_AirLine\dexi.pth", map_location='cuda:0')
-EDGE_DET.load_state_dict(edge_state_dict)
+def _init_airline_models():
+    """AirLine 모델 lazy initialization"""
+    global ORI_DET, EDGE_DET
+    if ORI_DET is None:
+        ORI_DET = build_oridet()
+    if EDGE_DET is None:
+        EDGE_DET = DexiNed().cuda()
+        # 모델 가중치 로드
+        dexi_path = os.path.join(os.path.dirname(__file__), "dexi.pth")
+        if os.path.exists(dexi_path):
+            edge_state_dict = torch.load(dexi_path, map_location='cuda:0')
+            EDGE_DET.load_state_dict(edge_state_dict)
 
 AL_CFG = dict(edgeThresh=0, simThresh=0.9, pixelNumThresh=10)
 
@@ -556,14 +565,17 @@ def run_hough(img):
 
 def run_airline(roi_bgr: np.ndarray, airline_config: dict):
     """성공이 확인된 AirLine 로직을 함수로 래핑"""
+    # Lazy initialization
+    _init_airline_models()
+
     H0, W0 = roi_bgr.shape[:2]
-    
+
     res = 16; dscale = 1
     resized_height = H0 // dscale // res * res
     resized_width = W0 // dscale // res * res
     if resized_height == 0 or resized_width == 0:
         return np.empty((0, 4), float)
-        
+
     rx1_resized = cv2.resize(roi_bgr, (resized_width, resized_height))
     scale_x = W0 / resized_width
     scale_y = H0 / resized_height
