@@ -1,0 +1,135 @@
+{
+  "WIN_20250604_14_01_48_Pro": {
+    "continuity_break": 0.56939464910776,
+    "orientation_var": 0.3325164850327569,
+    "illumination_uneven": 0.4885833795254286,
+    "centroid_dispersion": 0.21828970575205386,
+    "difficulty": 0.41975130202228517
+  },
+  "WIN_20250604_14_05_41_Pro": {
+    "continuity_break": 0.7705896030031617,
+    "orientation_var": 0.323753605248576,
+    "illumination_uneven": 0.6000551337092571,
+    "centroid_dispersion": 0.2840992876618839,
+    "difficulty": 0.5189489231727835
+  },
+  "WIN_20250604_14_14_31_Pro": {
+    "continuity_break": 0.5057789074856872,
+    "orientation_var": 0.31305568039994824,
+    "illumination_uneven": 0.5823270506279263,
+    "centroid_dispersion": 0.3157274645329525,
+    "difficulty": 0.4387248479092653
+  },
+  "WIN_20250604_14_20_07_Pro": {
+    "continuity_break": 0.4979616981792184,
+    "orientation_var": 0.323374559255736,
+    "illumination_uneven": 0.37519060785193115,
+    "centroid_dispersion": 0.3002723347548261,
+    "difficulty": 0.38408426818164754
+  },
+  "WIN_20250604_14_29_14_Pro": {
+    "continuity_break": 0.6979457524934998,
+    "orientation_var": 0.32094301267316794,
+    "illumination_uneven": 0.4761861653471954,
+    "centroid_dispersion": 0.27597420095167674,
+    "difficulty": 0.4638608604434761
+  },
+  "WIN_20250604_14_32_50_Pro": {
+    "continuity_break": 0.656408668112018,
+    "orientation_var": 0.3369339670320516,
+    "illumination_uneven": 0.6000003337391602,
+    "centroid_dispersion": 0.23562442915921497,
+    "difficulty": 0.47828106145825133
+  },
+  "WIN_20250604_14_37_47_Pro": {
+    "continuity_break": 0.7402003315776824,
+    "orientation_var": 0.33440104148967476,
+    "illumination_uneven": 0.3284594793266144,
+    "centroid_dispersion": 0.25826768983036935,
+    "difficulty": 0.43942876764345085
+  },
+  "WIN_20250604_16_04_39_Pro": {
+    "continuity_break": 0.5352582216721633,
+    "orientation_var": 0.3364608797742642,
+    "illumination_uneven": 0.4511422464786875,
+    "centroid_dispersion": 0.2581273087278121,
+    "difficulty": 0.40910370981044936
+  },
+  "WIN_20250604_16_10_32_Pro": {
+    "continuity_break": 0.599742961130971,
+    "orientation_var": 0.32805622022478065,
+    "illumination_uneven": 0.5124933593643201,
+    "centroid_dispersion": 0.27171705956581593,
+    "difficulty": 0.44440369514972966
+  },
+  "WIN_20250604_16_19_23_Pro": {
+    "continuity_break": 0.42802965895261336,
+    "orientation_var": 0.34202454985950503,
+    "illumination_uneven": 0.550788149797435,
+    "centroid_dispersion": 0.22435775951037254,
+    "difficulty": 0.3964836245020935
+  },
+  "WIN_20250604_16_26_11_Pro": {
+    "continuity_break": 0.6132715910623567,
+    "orientation_var": 0.3350364705065666,
+    "illumination_uneven": 0.4343822762619549,
+    "centroid_dispersion": 0.27182867993274856,
+    "difficulty": 0.43070189999738706
+  },
+  "WIN_20250605_09_49_10_Pro": {
+    "continuity_break": 0.8457922299354524,
+    "orientation_var": 0.32779508080652886,
+    "illumination_uneven": 0.5314632700564386,
+    "centroid_dispersion": 0.3136242861850042,
+    "difficulty": 0.5312771139333784
+  },
+  "WIN_20250605_09_56_54_Pro": {
+    "continuity_break": 0.7253990693628054,
+    "orientation_var": 0.329936558751765,
+    "illumination_uneven": 0.4890748648118963,
+    "centroid_dispersion": 0.23430043534498127,
+    "difficulty": 0.46923266376875317
+  },
+  "WIN_20250605_10_04_59_Pro": {
+    "continuity_break": 0.5438875714484991,
+    "orientation_var": 0.3384029000996174,
+    "illumination_uneven": 0.4707438825595792,
+    "centroid_dispersion": 0.3402210732280244,
+    "difficulty": 0.4334971817449538
+  },
+  "WIN_20250605_10_16_26_Pro": {
+    "continuity_break": 0.6726244335397058,
+    "orientation_var": 0.3200583550371303,
+    "illumination_uneven": 0.3946599907608713,
+    "centroid_dispersion": 0.21467893370255,
+    "difficulty": 0.4234027032519222
+  },
+  "WIN_20250605_10_19_36_Pro": {
+    "continuity_break": 0.5185801642725332,
+    "orientation_var": 0.33063077678495345,
+    "illumination_uneven": 0.3781961619015358,
+    "centroid_dispersion": 0.22594486858192397,
+    "difficulty": 0.3779697576697671
+  },
+  "WIN_20250605_10_32_15_Pro": {
+    "continuity_break": 0.5101914521797681,
+    "orientation_var": 0.3159294428613937,
+    "illumination_uneven": 0.3448814525703747,
+    "centroid_dispersion": 0.24698942092303675,
+    "difficulty": 0.36765804369647986
+  },
+  "WIN_20250605_10_47_30_Pro": {
+    "continuity_break": 0.48508220240258015,
+    "orientation_var": 0.32560318457148185,
+    "illumination_uneven": 0.3196936815345389,
+    "centroid_dispersion": 0.26120043209830807,
+    "difficulty": 0.3590889636669409
+  },
+  "WIN_20250605_11_05_45_Pro": {
+    "continuity_break": 0.595468532693803,
+    "orientation_var": 0.3232876854845814,
+    "illumination_uneven": 0.37754389641962366,
+    "centroid_dispersion": 0.23515526615302806,
+    "difficulty": 0.4008795085147978
+  }
+}

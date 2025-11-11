@@ -1,0 +1,22 @@
+{
+    "is_collar": 1,
+    "collar_type": 2,
+    "is_hole_left": 0,
+    "is_hole_right": 0,
+    "hole_left_bounding_width": 0,
+    "hole_right_bounding_width": 0,
+    "coordinates": {
+        "longi_left_upper_x": 405.03517150878906,
+        "longi_left_upper_y": 570.1946411132812,
+        "longi_left_lower_x": 405.03517150878906,
+        "longi_left_lower_y": 1571.346427639079,
+        "longi_right_upper_x": 3224.194091796875,
+        "longi_right_upper_y": 686.9797973632812,
+        "longi_right_lower_x": 3224.194091796875,
+        "longi_right_lower_y": 1501.8742232016432,
+        "collar_lower_x": 2688.994140625,
+        "collar_lower_y": 508.06134033203125,
+        "collar_upper_x": 2688.994140625,
+        "collar_upper_y": 195.92922973632812
+    }
+}

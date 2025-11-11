@@ -1,0 +1,1923 @@
+{
+  "WIN_20250604_14_01_48_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_14_01_48_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 317,
+      "longi_left_lower_y": 1663,
+      "longi_right_lower_x": 2755,
+      "longi_right_lower_y": 1766,
+      "longi_left_upper_x": 113,
+      "longi_left_upper_y": 724,
+      "longi_right_upper_x": 2781,
+      "longi_right_upper_y": 980,
+      "collar_left_lower_x": 843,
+      "collar_left_lower_y": 1691,
+      "collar_left_upper_x": 658,
+      "collar_left_upper_y": 524
+    }
+  },
+  "WIN_20250604_14_05_41_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_14_05_41_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 469,
+      "longi_left_lower_y": 1584,
+      "longi_right_lower_x": 3179,
+      "longi_right_lower_y": 1548,
+      "longi_left_upper_x": 309,
+      "longi_left_upper_y": 581,
+      "longi_right_upper_x": 3263,
+      "longi_right_upper_y": 893,
+      "collar_left_lower_x": 2471,
+      "collar_left_lower_y": 1540,
+      "collar_left_upper_x": 2523,
+      "collar_left_upper_y": 532
+    }
+  },
+  "WIN_20250604_14_14_31_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_14_14_31_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 692,
+      "longi_left_lower_y": 1511,
+      "longi_right_lower_x": 3232,
+      "longi_right_lower_y": 1656,
+      "longi_left_upper_x": 607,
+      "longi_left_upper_y": 650,
+      "longi_right_upper_x": 3263,
+      "longi_right_upper_y": 535,
+      "collar_left_lower_x": 2457,
+      "collar_left_lower_y": 1599,
+      "collar_left_upper_x": 2453,
+      "collar_left_upper_y": 569
+    }
+  },
+  "WIN_20250604_14_20_07_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_14_20_07_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 775,
+      "longi_left_lower_y": 1226,
+      "longi_right_lower_x": 2616,
+      "longi_right_lower_y": 1246,
+      "longi_left_upper_x": 708,
+      "longi_left_upper_y": 532,
+      "longi_right_upper_x": 2697,
+      "longi_right_upper_y": 546,
+      "collar_left_lower_x": 2145,
+      "collar_left_lower_y": 1228,
+      "collar_left_upper_x": 2192,
+      "collar_left_upper_y": 551
+    }
+  },
+  "WIN_20250604_14_29_14_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_14_29_14_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 552,
+      "longi_left_lower_y": 1460,
+      "longi_right_lower_x": 2373,
+      "longi_right_lower_y": 1412,
+      "longi_left_upper_x": 483,
+      "longi_left_upper_y": 779,
+      "longi_right_upper_x": 2397,
+      "longi_right_upper_y": 746,
+      "collar_left_lower_x": 898,
+      "collar_left_lower_y": 1459,
+      "collar_left_upper_x": 864,
+      "collar_left_upper_y": 774
+    }
+  },
+  "WIN_20250604_14_32_50_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_14_32_50_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 811,
+      "longi_left_lower_y": 1147,
+      "longi_right_lower_x": 2586,
+      "longi_right_lower_y": 1274,
+      "longi_left_upper_x": 694,
+      "longi_left_upper_y": 531,
+      "longi_right_upper_x": 2661,
+      "longi_right_upper_y": 681,
+      "collar_left_lower_x": 1095,
+      "collar_left_lower_y": 1171,
+      "collar_left_upper_x": 1011,
+      "collar_left_upper_y": 542
+    }
+  },
+  "WIN_20250604_14_37_47_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_14_37_47_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 826,
+      "longi_left_lower_y": 1316,
+      "longi_right_lower_x": 2618,
+      "longi_right_lower_y": 1415,
+      "longi_left_upper_x": 797,
+      "longi_left_upper_y": 661,
+      "longi_right_upper_x": 2665,
+      "longi_right_upper_y": 712,
+      "collar_left_lower_x": 2133,
+      "collar_left_lower_y": 1380,
+      "collar_left_upper_x": 2170,
+      "collar_left_upper_y": 704
+    }
+  },
+  "WIN_20250604_16_04_39_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_16_04_39_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 946,
+      "longi_left_lower_y": 1474,
+      "longi_right_lower_x": 2749,
+      "longi_right_lower_y": 1530,
+      "longi_left_upper_x": 912,
+      "longi_left_upper_y": 593,
+      "longi_right_upper_x": 2774,
+      "longi_right_upper_y": 570,
+      "collar_left_lower_x": 2250,
+      "collar_left_lower_y": 1519,
+      "collar_left_upper_x": 2258,
+      "collar_left_upper_y": 582
+    }
+  },
+  "WIN_20250604_16_10_32_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_16_10_32_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 764,
+      "longi_left_lower_y": 1671,
+      "longi_right_lower_x": 2384,
+      "longi_right_lower_y": 1650,
+      "longi_left_upper_x": 741,
+      "longi_left_upper_y": 864,
+      "longi_right_upper_x": 2382,
+      "longi_right_upper_y": 842,
+      "collar_left_lower_x": 1080,
+      "collar_left_lower_y": 1672,
+      "collar_left_upper_x": 1068,
+      "collar_left_upper_y": 852
+    }
+  },
+  "WIN_20250604_16_19_23_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_16_19_23_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 915,
+      "longi_left_lower_y": 1368,
+      "longi_right_lower_x": 2623,
+      "longi_right_lower_y": 1514,
+      "longi_left_upper_x": 870,
+      "longi_left_upper_y": 532,
+      "longi_right_upper_x": 2751,
+      "longi_right_upper_y": 617,
+      "collar_left_lower_x": 1326,
+      "collar_left_lower_y": 1407,
+      "collar_left_upper_x": 1332,
+      "collar_left_upper_y": 569
+    }
+  },
+  "WIN_20250604_16_26_11_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250604_16_26_11_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 1085,
+      "longi_left_lower_y": 1633,
+      "longi_right_lower_x": 2657,
+      "longi_right_lower_y": 1351,
+      "longi_left_upper_x": 913,
+      "longi_left_upper_y": 844,
+      "longi_right_upper_x": 2541,
+      "longi_right_upper_y": 550,
+      "collar_left_lower_x": 2346,
+      "collar_left_lower_y": 1418,
+      "collar_left_upper_x": 2211,
+      "collar_left_upper_y": 609
+    }
+  },
+  "WIN_20250605_09_49_10_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_09_49_10_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 713,
+      "longi_left_lower_y": 1342,
+      "longi_right_lower_x": 2624,
+      "longi_right_lower_y": 1275,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2801,
+      "longi_right_upper_y": 296,
+      "collar_left_lower_x": 0,
+      "collar_left_lower_y": 0,
+      "collar_left_upper_x": 0,
+      "collar_left_upper_y": 0
+    }
+  },
+  "WIN_20250605_09_56_54_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_09_56_54_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 668,
+      "longi_left_lower_y": 1711,
+      "longi_right_lower_x": 2666,
+      "longi_right_lower_y": 1666,
+      "longi_left_upper_x": 632,
+      "longi_left_upper_y": 1171,
+      "longi_right_upper_x": 2679,
+      "longi_right_upper_y": 1129,
+      "collar_left_lower_x": 1155,
+      "collar_left_lower_y": 1699,
+      "collar_left_upper_x": 1136,
+      "collar_left_upper_y": 1168
+    }
+  },
+  "WIN_20250605_10_04_59_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_10_04_59_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 861,
+      "longi_left_lower_y": 1438,
+      "longi_right_lower_x": 2675,
+      "longi_right_lower_y": 1435,
+      "longi_left_upper_x": 830,
+      "longi_left_upper_y": 967,
+      "longi_right_upper_x": 2699,
+      "longi_right_upper_y": 954,
+      "collar_left_lower_x": 2352,
+      "collar_left_lower_y": 1451,
+      "collar_left_upper_x": 2357,
+      "collar_left_upper_y": 955
+    }
+  },
+  "WIN_20250605_10_16_26_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_10_16_26_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 912,
+      "longi_left_lower_y": 1519,
+      "longi_right_lower_x": 2541,
+      "longi_right_lower_y": 1513,
+      "longi_left_upper_x": 861,
+      "longi_left_upper_y": 656,
+      "longi_right_upper_x": 2567,
+      "longi_right_upper_y": 632,
+      "collar_left_lower_x": 2083,
+      "collar_left_lower_y": 1510,
+      "collar_left_upper_x": 2086,
+      "collar_left_upper_y": 644
+    }
+  },
+  "WIN_20250605_10_19_36_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_10_19_36_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 901,
+      "longi_left_lower_y": 1576,
+      "longi_right_lower_x": 2555,
+      "longi_right_lower_y": 1541,
+      "longi_left_upper_x": 847,
+      "longi_left_upper_y": 707,
+      "longi_right_upper_x": 2550,
+      "longi_right_upper_y": 648,
+      "collar_left_lower_x": 2094,
+      "collar_left_lower_y": 1553,
+      "collar_left_upper_x": 2074,
+      "collar_left_upper_y": 735
+    }
+  },
+  "WIN_20250605_10_32_15_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_10_32_15_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 743,
+      "longi_left_lower_y": 1627,
+      "longi_right_lower_x": 2781,
+      "longi_right_lower_y": 1617,
+      "longi_left_upper_x": 722,
+      "longi_left_upper_y": 547,
+      "longi_right_upper_x": 0,
+      "longi_right_upper_y": 0,
+      "collar_left_lower_x": 1168,
+      "collar_left_lower_y": 1631,
+      "collar_left_upper_x": 1150,
+      "collar_left_upper_y": 543
+    }
+  },
+  "WIN_20250605_10_47_30_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_10_47_30_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 756,
+      "longi_left_lower_y": 1391,
+      "longi_right_lower_x": 0,
+      "longi_right_lower_y": 0,
+      "longi_left_upper_x": 722,
+      "longi_left_upper_y": 972,
+      "longi_right_upper_x": 0,
+      "longi_right_upper_y": 0,
+      "collar_left_lower_x": 0,
+      "collar_left_lower_y": 0,
+      "collar_left_upper_x": 0,
+      "collar_left_upper_y": 0
+    }
+  },
+  "WIN_20250605_11_05_45_Pro": {
+    "image": "dataset\\images\\test\\WIN_20250605_11_05_45_Pro.jpg",
+    "coordinates": {
+      "longi_left_lower_x": 826,
+      "longi_left_lower_y": 1462,
+      "longi_right_lower_x": 2457,
+      "longi_right_lower_y": 1490,
+      "longi_left_upper_x": 822,
+      "longi_left_upper_y": 1031,
+      "longi_right_upper_x": 2474,
+      "longi_right_upper_y": 1050,
+      "collar_left_lower_x": 1170,
+      "collar_left_lower_y": 1470,
+      "collar_left_upper_x": 1172,
+      "collar_left_upper_y": 1090
+    }
+  },
+  "WIN_20250717_14_31_42_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_31_42_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 207,
+      "longi_left_lower_y": 1387,
+      "longi_right_lower_x": 2985,
+      "longi_right_lower_y": 1365,
+      "longi_left_upper_x": 184,
+      "longi_left_upper_y": 612,
+      "longi_right_upper_x": 3005,
+      "longi_right_upper_y": 606,
+      "collar_left_lower_x": 901,
+      "collar_left_lower_y": 1381,
+      "collar_left_upper_x": 892,
+      "collar_left_upper_y": 720
+    }
+  },
+  "WIN_20250717_14_31_47_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_31_47_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 226,
+      "longi_left_lower_y": 1400,
+      "longi_right_lower_x": 3009,
+      "longi_right_lower_y": 1364,
+      "longi_left_upper_x": 200,
+      "longi_left_upper_y": 626,
+      "longi_right_upper_x": 3028,
+      "longi_right_upper_y": 606,
+      "collar_left_lower_x": 923,
+      "collar_left_lower_y": 1395,
+      "collar_left_upper_x": 910,
+      "collar_left_upper_y": 728
+    }
+  },
+  "WIN_20250717_14_31_50_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_31_50_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 227,
+      "longi_left_lower_y": 1334,
+      "longi_right_lower_x": 2998,
+      "longi_right_lower_y": 1558,
+      "longi_left_upper_x": 275,
+      "longi_left_upper_y": 562,
+      "longi_right_upper_x": 3078,
+      "longi_right_upper_y": 799,
+      "collar_left_lower_x": 924,
+      "collar_left_lower_y": 1396,
+      "collar_left_upper_x": 970,
+      "collar_left_upper_y": 731
+    }
+  },
+  "WIN_20250717_14_31_53_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_31_53_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 320,
+      "longi_left_lower_y": 1544,
+      "longi_right_lower_x": 3108,
+      "longi_right_lower_y": 1277,
+      "longi_left_upper_x": 230,
+      "longi_left_upper_y": 770,
+      "longi_right_upper_x": 3069,
+      "longi_right_upper_y": 510,
+      "collar_left_lower_x": 1011,
+      "collar_left_lower_y": 1479,
+      "collar_left_upper_x": 946,
+      "collar_left_upper_y": 815
+    }
+  },
+  "WIN_20250717_14_31_57_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_31_57_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 302,
+      "longi_left_lower_y": 1104,
+      "longi_right_lower_x": 3038,
+      "longi_right_lower_y": 1118,
+      "longi_left_upper_x": 242,
+      "longi_left_upper_y": 333,
+      "longi_right_upper_x": 3120,
+      "longi_right_upper_y": 361,
+      "collar_left_lower_x": 987,
+      "collar_left_lower_y": 1110,
+      "collar_left_upper_x": 961,
+      "collar_left_upper_y": 445
+    }
+  },
+  "WIN_20250717_14_32_00_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_32_00_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 269,
+      "longi_left_lower_y": 1148,
+      "longi_right_lower_x": 3055,
+      "longi_right_lower_y": 1145,
+      "longi_left_upper_x": 219,
+      "longi_left_upper_y": 358,
+      "longi_right_upper_x": 3122,
+      "longi_right_upper_y": 376,
+      "collar_left_lower_x": 975,
+      "collar_left_lower_y": 1148,
+      "collar_left_upper_x": 947,
+      "collar_left_upper_y": 477
+    }
+  },
+  "WIN_20250717_14_32_04_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_32_04_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 103,
+      "longi_left_lower_y": 1432,
+      "longi_right_lower_x": 2822,
+      "longi_right_lower_y": 1373,
+      "longi_left_upper_x": 89,
+      "longi_left_upper_y": 624,
+      "longi_right_upper_x": 2852,
+      "longi_right_upper_y": 679,
+      "collar_left_lower_x": 852,
+      "collar_left_lower_y": 1419,
+      "collar_left_upper_x": 849,
+      "collar_left_upper_y": 743
+    }
+  },
+  "WIN_20250717_14_32_08_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_32_08_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 365,
+      "longi_left_lower_y": 1305,
+      "longi_right_lower_x": 3139,
+      "longi_right_lower_y": 1337,
+      "longi_left_upper_x": 334,
+      "longi_left_upper_y": 571,
+      "longi_right_upper_x": 3171,
+      "longi_right_upper_y": 531,
+      "collar_left_lower_x": 1005,
+      "collar_left_lower_y": 1310,
+      "collar_left_upper_x": 986,
+      "collar_left_upper_y": 671
+    }
+  },
+  "WIN_20250717_14_32_18_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_32_18_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 278,
+      "longi_left_lower_y": 830,
+      "longi_right_lower_x": 2606,
+      "longi_right_lower_y": 1828,
+      "longi_left_upper_x": 534,
+      "longi_left_upper_y": 138,
+      "longi_right_upper_x": 2947,
+      "longi_right_upper_y": 1246,
+      "collar_left_lower_x": 900,
+      "collar_left_lower_y": 1094,
+      "collar_left_upper_x": 1133,
+      "collar_left_upper_y": 528
+    }
+  },
+  "WIN_20250717_14_38_49_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_38_49_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 857,
+      "longi_left_lower_y": 1617,
+      "longi_right_lower_x": 2646,
+      "longi_right_lower_y": 1577,
+      "longi_left_upper_x": 806,
+      "longi_left_upper_y": 798,
+      "longi_right_upper_x": 2648,
+      "longi_right_upper_y": 738,
+      "collar_left_lower_x": 2087,
+      "collar_left_lower_y": 1583,
+      "collar_left_upper_x": 2074,
+      "collar_left_upper_y": 829
+    }
+  },
+  "WIN_20250717_14_38_53_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_38_53_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 792,
+      "longi_left_lower_y": 1741,
+      "longi_right_lower_x": 2634,
+      "longi_right_lower_y": 1688,
+      "longi_left_upper_x": 760,
+      "longi_left_upper_y": 895,
+      "longi_right_upper_x": 2616,
+      "longi_right_upper_y": 833,
+      "collar_left_lower_x": 2066,
+      "collar_left_lower_y": 1697,
+      "collar_left_upper_x": 2044,
+      "collar_left_upper_y": 927
+    }
+  },
+  "WIN_20250717_14_38_55_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_38_55_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 852,
+      "longi_left_lower_y": 1686,
+      "longi_right_lower_x": 2670,
+      "longi_right_lower_y": 1701,
+      "longi_left_upper_x": 847,
+      "longi_left_upper_y": 852,
+      "longi_right_upper_x": 2685,
+      "longi_right_upper_y": 852,
+      "collar_left_lower_x": 2105,
+      "collar_left_lower_y": 1694,
+      "collar_left_upper_x": 2111,
+      "collar_left_upper_y": 929
+    }
+  },
+  "WIN_20250717_14_39_19_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_39_19_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 771,
+      "longi_left_lower_y": 1631,
+      "longi_right_lower_x": 2591,
+      "longi_right_lower_y": 1597,
+      "longi_left_upper_x": 754,
+      "longi_left_upper_y": 797,
+      "longi_right_upper_x": 2572,
+      "longi_right_upper_y": 754,
+      "collar_left_lower_x": 2030,
+      "collar_left_lower_y": 1597,
+      "collar_left_upper_x": 2011,
+      "collar_left_upper_y": 840
+    }
+  },
+  "WIN_20250717_14_39_21_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_39_21_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 788,
+      "longi_left_lower_y": 1656,
+      "longi_right_lower_x": 2611,
+      "longi_right_lower_y": 1625,
+      "longi_left_upper_x": 774,
+      "longi_left_upper_y": 818,
+      "longi_right_upper_x": 2592,
+      "longi_right_upper_y": 777,
+      "collar_left_lower_x": 2051,
+      "collar_left_lower_y": 1631,
+      "collar_left_upper_x": 2031,
+      "collar_left_upper_y": 866
+    }
+  },
+  "WIN_20250717_14_39_24_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_39_24_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 820,
+      "longi_left_lower_y": 1647,
+      "longi_right_lower_x": 2634,
+      "longi_right_lower_y": 1688,
+      "longi_left_upper_x": 833,
+      "longi_left_upper_y": 815,
+      "longi_right_upper_x": 2647,
+      "longi_right_upper_y": 838,
+      "collar_left_lower_x": 2068,
+      "collar_left_lower_y": 1671,
+      "collar_left_upper_x": 2077,
+      "collar_left_upper_y": 905
+    }
+  },
+  "WIN_20250717_14_39_27_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_39_27_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 745,
+      "longi_left_lower_y": 1636,
+      "longi_right_lower_x": 2573,
+      "longi_right_lower_y": 1699,
+      "longi_left_upper_x": 774,
+      "longi_left_upper_y": 786,
+      "longi_right_upper_x": 2596,
+      "longi_right_upper_y": 846,
+      "collar_left_lower_x": 2007,
+      "collar_left_lower_y": 1674,
+      "collar_left_upper_x": 2031,
+      "collar_left_upper_y": 904
+    }
+  },
+  "WIN_20250717_14_40_56_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_40_56_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 760,
+      "longi_left_lower_y": 1651,
+      "longi_right_lower_x": 2482,
+      "longi_right_lower_y": 1635,
+      "longi_left_upper_x": 743,
+      "longi_left_upper_y": 849,
+      "longi_right_upper_x": 2479,
+      "longi_right_upper_y": 830,
+      "collar_left_lower_x": 1948,
+      "collar_left_lower_y": 1633,
+      "collar_left_upper_x": 1944,
+      "collar_left_upper_y": 907
+    }
+  },
+  "WIN_20250717_14_40_59_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_40_59_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 765,
+      "longi_left_lower_y": 1713,
+      "longi_right_lower_x": 2500,
+      "longi_right_lower_y": 1684,
+      "longi_left_upper_x": 755,
+      "longi_left_upper_y": 908,
+      "longi_right_upper_x": 2484,
+      "longi_right_upper_y": 876,
+      "collar_left_lower_x": 1967,
+      "collar_left_lower_y": 1687,
+      "collar_left_upper_x": 1953,
+      "collar_left_upper_y": 959
+    }
+  },
+  "WIN_20250717_14_41_05_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_05_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 871,
+      "longi_left_lower_y": 1601,
+      "longi_right_lower_x": 2448,
+      "longi_right_lower_y": 1572,
+      "longi_left_upper_x": 853,
+      "longi_left_upper_y": 873,
+      "longi_right_upper_x": 2434,
+      "longi_right_upper_y": 837,
+      "collar_left_lower_x": 1956,
+      "collar_left_lower_y": 1574,
+      "collar_left_upper_x": 1944,
+      "collar_left_upper_y": 912
+    }
+  },
+  "WIN_20250717_14_41_08_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_08_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 894,
+      "longi_left_lower_y": 1611,
+      "longi_right_lower_x": 2466,
+      "longi_right_lower_y": 1574,
+      "longi_left_upper_x": 875,
+      "longi_left_upper_y": 884,
+      "longi_right_upper_x": 2451,
+      "longi_right_upper_y": 842,
+      "collar_left_lower_x": 1980,
+      "collar_left_lower_y": 1581,
+      "collar_left_upper_x": 1962,
+      "collar_left_upper_y": 919
+    }
+  },
+  "WIN_20250717_14_41_17_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_17_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 932,
+      "longi_left_lower_y": 1702,
+      "longi_right_lower_x": 2384,
+      "longi_right_lower_y": 1678,
+      "longi_left_upper_x": 929,
+      "longi_left_upper_y": 1022,
+      "longi_right_upper_x": 2366,
+      "longi_right_upper_y": 998,
+      "collar_left_lower_x": 1935,
+      "collar_left_lower_y": 1683,
+      "collar_left_upper_x": 1924,
+      "collar_left_upper_y": 1068
+    }
+  },
+  "WIN_20250717_14_41_18_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_18_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 913,
+      "longi_left_lower_y": 1674,
+      "longi_right_lower_x": 2366,
+      "longi_right_lower_y": 1651,
+      "longi_left_upper_x": 908,
+      "longi_left_upper_y": 999,
+      "longi_right_upper_x": 2347,
+      "longi_right_upper_y": 974,
+      "collar_left_lower_x": 1920,
+      "collar_left_lower_y": 1655,
+      "collar_left_upper_x": 1906,
+      "collar_left_upper_y": 1042
+    }
+  },
+  "WIN_20250717_14_41_23_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_23_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1037,
+      "longi_left_lower_y": 1515,
+      "longi_right_lower_x": 2354,
+      "longi_right_lower_y": 1501,
+      "longi_left_upper_x": 1026,
+      "longi_left_upper_y": 909,
+      "longi_right_upper_x": 2342,
+      "longi_right_upper_y": 886,
+      "collar_left_lower_x": 1942,
+      "collar_left_lower_y": 1505,
+      "collar_left_upper_x": 1934,
+      "collar_left_upper_y": 950
+    }
+  },
+  "WIN_20250717_14_41_25_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_25_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1044,
+      "longi_left_lower_y": 1489,
+      "longi_right_lower_x": 2370,
+      "longi_right_lower_y": 1477,
+      "longi_left_upper_x": 1037,
+      "longi_left_upper_y": 881,
+      "longi_right_upper_x": 2368,
+      "longi_right_upper_y": 856,
+      "collar_left_lower_x": 1964,
+      "collar_left_lower_y": 1478,
+      "collar_left_upper_x": 1952,
+      "collar_left_upper_y": 921
+    }
+  },
+  "WIN_20250717_14_41_28_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_28_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1048,
+      "longi_left_lower_y": 1541,
+      "longi_right_lower_x": 2378,
+      "longi_right_lower_y": 1529,
+      "longi_left_upper_x": 1042,
+      "longi_left_upper_y": 932,
+      "longi_right_upper_x": 2360,
+      "longi_right_upper_y": 904,
+      "collar_left_lower_x": 1964,
+      "collar_left_lower_y": 1528,
+      "collar_left_upper_x": 1952,
+      "collar_left_upper_y": 970
+    }
+  },
+  "WIN_20250717_14_41_33_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_33_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1005,
+      "longi_left_lower_y": 1580,
+      "longi_right_lower_x": 2266,
+      "longi_right_lower_y": 1557,
+      "longi_left_upper_x": 1005,
+      "longi_left_upper_y": 992,
+      "longi_right_upper_x": 2248,
+      "longi_right_upper_y": 968,
+      "collar_left_lower_x": 1879,
+      "collar_left_lower_y": 1561,
+      "collar_left_upper_x": 1867,
+      "collar_left_upper_y": 1030
+    }
+  },
+  "WIN_20250717_14_41_35_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_35_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1025,
+      "longi_left_lower_y": 1524,
+      "longi_right_lower_x": 2280,
+      "longi_right_lower_y": 1494,
+      "longi_left_upper_x": 1019,
+      "longi_left_upper_y": 943,
+      "longi_right_upper_x": 2262,
+      "longi_right_upper_y": 912,
+      "collar_left_lower_x": 1892,
+      "collar_left_lower_y": 1503,
+      "collar_left_upper_x": 1878,
+      "collar_left_upper_y": 976
+    }
+  },
+  "WIN_20250717_14_41_38_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_38_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1051,
+      "longi_left_lower_y": 1481,
+      "longi_right_lower_x": 2292,
+      "longi_right_lower_y": 1469,
+      "longi_left_upper_x": 1048,
+      "longi_left_upper_y": 905,
+      "longi_right_upper_x": 2282,
+      "longi_right_upper_y": 888,
+      "collar_left_lower_x": 1909,
+      "collar_left_lower_y": 1469,
+      "collar_left_upper_x": 1900,
+      "collar_left_upper_y": 944
+    }
+  },
+  "WIN_20250717_14_41_42_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_42_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1033,
+      "longi_left_lower_y": 1600,
+      "longi_right_lower_x": 2215,
+      "longi_right_lower_y": 1581,
+      "longi_left_upper_x": 1035,
+      "longi_left_upper_y": 1047,
+      "longi_right_upper_x": 2198,
+      "longi_right_upper_y": 1030,
+      "collar_left_lower_x": 1850,
+      "collar_left_lower_y": 1587,
+      "collar_left_upper_x": 1841,
+      "collar_left_upper_y": 1084
+    }
+  },
+  "WIN_20250717_14_41_45_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_45_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1063,
+      "longi_left_lower_y": 1624,
+      "longi_right_lower_x": 2249,
+      "longi_right_lower_y": 1608,
+      "longi_left_upper_x": 1065,
+      "longi_left_upper_y": 1074,
+      "longi_right_upper_x": 2230,
+      "longi_right_upper_y": 1054,
+      "collar_left_lower_x": 1883,
+      "collar_left_lower_y": 1613,
+      "collar_left_upper_x": 1870,
+      "collar_left_upper_y": 1108
+    }
+  },
+  "WIN_20250717_14_41_58_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_41_58_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1114,
+      "longi_left_lower_y": 1617,
+      "longi_right_lower_x": 2215,
+      "longi_right_lower_y": 1609,
+      "longi_left_upper_x": 1119,
+      "longi_left_upper_y": 1108,
+      "longi_right_upper_x": 2199,
+      "longi_right_upper_y": 1093,
+      "collar_left_lower_x": 1873,
+      "collar_left_lower_y": 1612,
+      "collar_left_upper_x": 1865,
+      "collar_left_upper_y": 1147
+    }
+  },
+  "WIN_20250717_14_42_01_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_01_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1095,
+      "longi_left_lower_y": 1538,
+      "longi_right_lower_x": 2187,
+      "longi_right_lower_y": 1530,
+      "longi_left_upper_x": 1094,
+      "longi_left_upper_y": 1033,
+      "longi_right_upper_x": 2173,
+      "longi_right_upper_y": 1022,
+      "collar_left_lower_x": 1847,
+      "collar_left_lower_y": 1528,
+      "collar_left_upper_x": 1841,
+      "collar_left_upper_y": 1070
+    }
+  },
+  "WIN_20250717_14_42_05_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_05_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1160,
+      "longi_left_lower_y": 1489,
+      "longi_right_lower_x": 2196,
+      "longi_right_lower_y": 1477,
+      "longi_left_upper_x": 1160,
+      "longi_left_upper_y": 1014,
+      "longi_right_upper_x": 2183,
+      "longi_right_upper_y": 992,
+      "collar_left_lower_x": 1874,
+      "collar_left_lower_y": 1478,
+      "collar_left_upper_x": 1867,
+      "collar_left_upper_y": 1046
+    }
+  },
+  "WIN_20250717_14_42_08_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_08_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1164,
+      "longi_left_lower_y": 1529,
+      "longi_right_lower_x": 2197,
+      "longi_right_lower_y": 1517,
+      "longi_left_upper_x": 1163,
+      "longi_left_upper_y": 1055,
+      "longi_right_upper_x": 2179,
+      "longi_right_upper_y": 1038,
+      "collar_left_lower_x": 1877,
+      "collar_left_lower_y": 1518,
+      "collar_left_upper_x": 1868,
+      "collar_left_upper_y": 1084
+    }
+  },
+  "WIN_20250717_14_42_11_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_11_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1154,
+      "longi_left_lower_y": 1554,
+      "longi_right_lower_x": 2187,
+      "longi_right_lower_y": 1532,
+      "longi_left_upper_x": 1150,
+      "longi_left_upper_y": 1077,
+      "longi_right_upper_x": 2168,
+      "longi_right_upper_y": 1050,
+      "collar_left_lower_x": 1867,
+      "collar_left_lower_y": 1540,
+      "collar_left_upper_x": 1855,
+      "collar_left_upper_y": 1100
+    }
+  },
+  "WIN_20250717_14_42_18_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_18_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1178,
+      "longi_left_lower_y": 1381,
+      "longi_right_lower_x": 2122,
+      "longi_right_lower_y": 1377,
+      "longi_left_upper_x": 1173,
+      "longi_left_upper_y": 945,
+      "longi_right_upper_x": 2118,
+      "longi_right_upper_y": 937,
+      "collar_left_lower_x": 1833,
+      "collar_left_lower_y": 1376,
+      "collar_left_upper_x": 1830,
+      "collar_left_upper_y": 975
+    }
+  },
+  "WIN_20250717_14_42_21_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_21_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1211,
+      "longi_left_lower_y": 1375,
+      "longi_right_lower_x": 2155,
+      "longi_right_lower_y": 1351,
+      "longi_left_upper_x": 1193,
+      "longi_left_upper_y": 931,
+      "longi_right_upper_x": 2143,
+      "longi_right_upper_y": 908,
+      "collar_left_lower_x": 1862,
+      "collar_left_lower_y": 1357,
+      "collar_left_upper_x": 1851,
+      "collar_left_upper_y": 956
+    }
+  },
+  "WIN_20250717_14_42_23_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_23_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1243,
+      "longi_left_lower_y": 1337,
+      "longi_right_lower_x": 2182,
+      "longi_right_lower_y": 1310,
+      "longi_left_upper_x": 1221,
+      "longi_left_upper_y": 900,
+      "longi_right_upper_x": 2171,
+      "longi_right_upper_y": 874,
+      "collar_left_lower_x": 1887,
+      "collar_left_lower_y": 1318,
+      "collar_left_upper_x": 1877,
+      "collar_left_upper_y": 917
+    }
+  },
+  "WIN_20250717_14_42_28_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_28_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 817,
+      "longi_left_lower_y": 1800,
+      "longi_right_lower_x": 2674,
+      "longi_right_lower_y": 1796,
+      "longi_left_upper_x": 812,
+      "longi_left_upper_y": 940,
+      "longi_right_upper_x": 2661,
+      "longi_right_upper_y": 927,
+      "collar_left_lower_x": 2095,
+      "collar_left_lower_y": 1793,
+      "collar_left_upper_x": 2085,
+      "collar_left_upper_y": 1005
+    }
+  },
+  "WIN_20250717_14_42_31_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_31_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 793,
+      "longi_left_lower_y": 1608,
+      "longi_right_lower_x": 2667,
+      "longi_right_lower_y": 1801,
+      "longi_left_upper_x": 856,
+      "longi_left_upper_y": 744,
+      "longi_right_upper_x": 2743,
+      "longi_right_upper_y": 916,
+      "collar_left_lower_x": 2071,
+      "collar_left_lower_y": 1738,
+      "collar_left_upper_x": 2141,
+      "collar_left_upper_y": 936
+    }
+  },
+  "WIN_20250717_14_42_34_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_34_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 824,
+      "longi_left_lower_y": 1833,
+      "longi_right_lower_x": 2705,
+      "longi_right_lower_y": 1604,
+      "longi_left_upper_x": 721,
+      "longi_left_upper_y": 974,
+      "longi_right_upper_x": 2587,
+      "longi_right_upper_y": 742,
+      "collar_left_lower_x": 2119,
+      "collar_left_lower_y": 1674,
+      "collar_left_upper_x": 2025,
+      "collar_left_upper_y": 888
+    }
+  },
+  "WIN_20250717_14_42_37_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_37_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 849,
+      "longi_left_lower_y": 1486,
+      "longi_right_lower_x": 2649,
+      "longi_right_lower_y": 1479,
+      "longi_left_upper_x": 834,
+      "longi_left_upper_y": 663,
+      "longi_right_upper_x": 2655,
+      "longi_right_upper_y": 640,
+      "collar_left_lower_x": 2090,
+      "collar_left_lower_y": 1473,
+      "collar_left_upper_x": 2086,
+      "collar_left_upper_y": 719
+    }
+  },
+  "WIN_20250717_14_42_40_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_40_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 793,
+      "longi_left_lower_y": 1538,
+      "longi_right_lower_x": 2618,
+      "longi_right_lower_y": 1514,
+      "longi_left_upper_x": 770,
+      "longi_left_upper_y": 697,
+      "longi_right_upper_x": 2611,
+      "longi_right_upper_y": 667,
+      "collar_left_lower_x": 2051,
+      "collar_left_lower_y": 1514,
+      "collar_left_upper_x": 2043,
+      "collar_left_upper_y": 750
+    }
+  },
+  "WIN_20250717_14_42_43_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_43_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 907,
+      "longi_left_lower_y": 1243,
+      "longi_right_lower_x": 2707,
+      "longi_right_lower_y": 1218,
+      "longi_left_upper_x": 838,
+      "longi_left_upper_y": 413,
+      "longi_right_upper_x": 2749,
+      "longi_right_upper_y": 357,
+      "collar_left_lower_x": 2141,
+      "collar_left_lower_y": 1223,
+      "collar_left_upper_x": 2146,
+      "collar_left_upper_y": 456
+    }
+  },
+  "WIN_20250717_14_42_46_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_46_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 827,
+      "longi_left_lower_y": 1317,
+      "longi_right_lower_x": 2685,
+      "longi_right_lower_y": 1317,
+      "longi_left_upper_x": 769,
+      "longi_left_upper_y": 459,
+      "longi_right_upper_x": 2737,
+      "longi_right_upper_y": 433,
+      "collar_left_lower_x": 2105,
+      "collar_left_lower_y": 1310,
+      "collar_left_upper_x": 2119,
+      "collar_left_upper_y": 522
+    }
+  },
+  "WIN_20250717_14_42_48_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_48_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 792,
+      "longi_left_lower_y": 1241,
+      "longi_right_lower_x": 2596,
+      "longi_right_lower_y": 1588,
+      "longi_left_upper_x": 895,
+      "longi_left_upper_y": 398,
+      "longi_right_upper_x": 2808,
+      "longi_right_upper_y": 738,
+      "collar_left_lower_x": 2026,
+      "collar_left_lower_y": 1470,
+      "collar_left_upper_x": 2185,
+      "collar_left_upper_y": 712
+    }
+  },
+  "WIN_20250717_14_42_51_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_51_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 913,
+      "longi_left_lower_y": 1544,
+      "longi_right_lower_x": 2713,
+      "longi_right_lower_y": 1153,
+      "longi_left_upper_x": 690,
+      "longi_left_upper_y": 720,
+      "longi_right_upper_x": 2579,
+      "longi_right_upper_y": 302,
+      "collar_left_lower_x": 2148,
+      "collar_left_lower_y": 1270,
+      "collar_left_upper_x": 2003,
+      "collar_left_upper_y": 515
+    }
+  },
+  "WIN_20250717_14_42_57_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_42_57_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1029,
+      "longi_left_lower_y": 1473,
+      "longi_right_lower_x": 2867,
+      "longi_right_lower_y": 1592,
+      "longi_left_upper_x": 1016,
+      "longi_left_upper_y": 684,
+      "longi_right_upper_x": 2897,
+      "longi_right_upper_y": 664,
+      "collar_left_lower_x": 2235,
+      "collar_left_lower_y": 1550,
+      "collar_left_upper_x": 2245,
+      "collar_left_upper_y": 752
+    }
+  },
+  "WIN_20250717_14_43_01_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_43_01_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 360,
+      "longi_left_lower_y": 1648,
+      "longi_right_lower_x": 2174,
+      "longi_right_lower_y": 1436,
+      "longi_left_upper_x": 286,
+      "longi_left_upper_y": 738,
+      "longi_right_upper_x": 2162,
+      "longi_right_upper_y": 667,
+      "collar_left_lower_x": 1688,
+      "collar_left_lower_y": 1494,
+      "collar_left_upper_x": 1664,
+      "collar_left_upper_y": 759
+    }
+  },
+  "WIN_20250717_14_48_13_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_13_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 671,
+      "longi_left_lower_y": 1501,
+      "longi_right_lower_x": 2507,
+      "longi_right_lower_y": 1501,
+      "longi_left_upper_x": 652,
+      "longi_left_upper_y": 653,
+      "longi_right_upper_x": 2510,
+      "longi_right_upper_y": 645,
+      "collar_left_lower_x": 1099,
+      "collar_left_lower_y": 1501,
+      "collar_left_upper_x": 1095,
+      "collar_left_upper_y": 653
+    }
+  },
+  "WIN_20250717_14_48_16_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_16_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 648,
+      "longi_left_lower_y": 1564,
+      "longi_right_lower_x": 2493,
+      "longi_right_lower_y": 1548,
+      "longi_left_upper_x": 629,
+      "longi_left_upper_y": 704,
+      "longi_right_upper_x": 2489,
+      "longi_right_upper_y": 688,
+      "collar_left_lower_x": 1080,
+      "collar_left_lower_y": 1556,
+      "collar_left_upper_x": 1074,
+      "collar_left_upper_y": 701
+    }
+  },
+  "WIN_20250717_14_48_18_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_18_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 636,
+      "longi_left_lower_y": 1502,
+      "longi_right_lower_x": 2475,
+      "longi_right_lower_y": 1625,
+      "longi_left_upper_x": 678,
+      "longi_left_upper_y": 656,
+      "longi_right_upper_x": 2528,
+      "longi_right_upper_y": 767,
+      "collar_left_lower_x": 1065,
+      "collar_left_lower_y": 1533,
+      "collar_left_upper_x": 1117,
+      "collar_left_upper_y": 683
+    }
+  },
+  "WIN_20250717_14_48_21_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_21_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 612,
+      "longi_left_lower_y": 1662,
+      "longi_right_lower_x": 2465,
+      "longi_right_lower_y": 1505,
+      "longi_left_upper_x": 539,
+      "longi_left_upper_y": 795,
+      "longi_right_upper_x": 2401,
+      "longi_right_upper_y": 657,
+      "collar_left_lower_x": 1052,
+      "collar_left_lower_y": 1627,
+      "collar_left_upper_x": 991,
+      "collar_left_upper_y": 759
+    }
+  },
+  "WIN_20250717_14_48_26_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_26_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 731,
+      "longi_left_lower_y": 1483,
+      "longi_right_lower_x": 2406,
+      "longi_right_lower_y": 1489,
+      "longi_left_upper_x": 738,
+      "longi_left_upper_y": 711,
+      "longi_right_upper_x": 2403,
+      "longi_right_upper_y": 716,
+      "collar_left_lower_x": 1125,
+      "collar_left_lower_y": 1481,
+      "collar_left_upper_x": 1136,
+      "collar_left_upper_y": 709
+    }
+  },
+  "WIN_20250717_14_48_29_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_29_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 724,
+      "longi_left_lower_y": 1510,
+      "longi_right_lower_x": 2411,
+      "longi_right_lower_y": 1530,
+      "longi_left_upper_x": 738,
+      "longi_left_upper_y": 734,
+      "longi_right_upper_x": 2414,
+      "longi_right_upper_y": 748,
+      "collar_left_lower_x": 1122,
+      "collar_left_lower_y": 1513,
+      "collar_left_upper_x": 1139,
+      "collar_left_upper_y": 736
+    }
+  },
+  "WIN_20250717_14_48_33_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_33_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 681,
+      "longi_left_lower_y": 1544,
+      "longi_right_lower_x": 2368,
+      "longi_right_lower_y": 1452,
+      "longi_left_upper_x": 634,
+      "longi_left_upper_y": 774,
+      "longi_right_upper_x": 2328,
+      "longi_right_upper_y": 681,
+      "collar_left_lower_x": 1082,
+      "collar_left_lower_y": 1540,
+      "collar_left_upper_x": 1043,
+      "collar_left_upper_y": 750
+    }
+  },
+  "WIN_20250717_14_48_35_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_35_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 731,
+      "longi_left_lower_y": 1164,
+      "longi_right_lower_x": 2360,
+      "longi_right_lower_y": 1178,
+      "longi_left_upper_x": 692,
+      "longi_left_upper_y": 397,
+      "longi_right_upper_x": 2400,
+      "longi_right_upper_y": 412,
+      "collar_left_lower_x": 1117,
+      "collar_left_lower_y": 1169,
+      "collar_left_upper_x": 1102,
+      "collar_left_upper_y": 402
+    }
+  },
+  "WIN_20250717_14_48_44_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_44_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 816,
+      "longi_left_lower_y": 1549,
+      "longi_right_lower_x": 2259,
+      "longi_right_lower_y": 1542,
+      "longi_left_upper_x": 821,
+      "longi_left_upper_y": 888,
+      "longi_right_upper_x": 2250,
+      "longi_right_upper_y": 877,
+      "collar_left_lower_x": 1156,
+      "collar_left_lower_y": 1549,
+      "collar_left_upper_x": 1167,
+      "collar_left_upper_y": 881
+    }
+  },
+  "WIN_20250717_14_48_46_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_46_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 838,
+      "longi_left_lower_y": 1560,
+      "longi_right_lower_x": 2286,
+      "longi_right_lower_y": 1552,
+      "longi_left_upper_x": 845,
+      "longi_left_upper_y": 889,
+      "longi_right_upper_x": 2277,
+      "longi_right_upper_y": 884,
+      "collar_left_lower_x": 1178,
+      "collar_left_lower_y": 1553,
+      "collar_left_upper_x": 1187,
+      "collar_left_upper_y": 885
+    }
+  },
+  "WIN_20250717_14_48_52_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_52_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 901,
+      "longi_left_lower_y": 1746,
+      "longi_right_lower_x": 2354,
+      "longi_right_lower_y": 1576,
+      "longi_left_upper_x": 843,
+      "longi_left_upper_y": 1074,
+      "longi_right_upper_x": 2272,
+      "longi_right_upper_y": 905,
+      "collar_left_lower_x": 1244,
+      "collar_left_lower_y": 1705,
+      "collar_left_upper_x": 1183,
+      "collar_left_upper_y": 1030
+    }
+  },
+  "WIN_20250717_14_48_55_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_48_55_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 923,
+      "longi_left_lower_y": 1231,
+      "longi_right_lower_x": 2327,
+      "longi_right_lower_y": 1245,
+      "longi_left_upper_x": 908,
+      "longi_left_upper_y": 578,
+      "longi_right_upper_x": 2351,
+      "longi_right_upper_y": 583,
+      "collar_left_lower_x": 1251,
+      "collar_left_lower_y": 1231,
+      "collar_left_upper_x": 1250,
+      "collar_left_upper_y": 578
+    }
+  },
+  "WIN_20250717_14_49_00_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_49_00_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 913,
+      "longi_left_lower_y": 1061,
+      "longi_right_lower_x": 2301,
+      "longi_right_lower_y": 1082,
+      "longi_left_upper_x": 886,
+      "longi_left_upper_y": 404,
+      "longi_right_upper_x": 2346,
+      "longi_right_upper_y": 425,
+      "collar_left_lower_x": 1238,
+      "collar_left_lower_y": 1064,
+      "collar_left_upper_x": 1232,
+      "collar_left_upper_y": 408
+    }
+  },
+  "WIN_20250717_14_49_16_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_49_16_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 932,
+      "longi_left_lower_y": 1601,
+      "longi_right_lower_x": 2287,
+      "longi_right_lower_y": 1616,
+      "longi_left_upper_x": 947,
+      "longi_left_upper_y": 972,
+      "longi_right_upper_x": 2289,
+      "longi_right_upper_y": 983,
+      "collar_left_lower_x": 1250,
+      "collar_left_lower_y": 1599,
+      "collar_left_upper_x": 1266,
+      "collar_left_upper_y": 971
+    }
+  },
+  "WIN_20250717_14_49_31_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_49_31_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 912,
+      "longi_left_lower_y": 1680,
+      "longi_right_lower_x": 2247,
+      "longi_right_lower_y": 1486,
+      "longi_left_upper_x": 838,
+      "longi_left_upper_y": 1057,
+      "longi_right_upper_x": 2164,
+      "longi_right_upper_y": 876,
+      "collar_left_lower_x": 1232,
+      "collar_left_lower_y": 1633,
+      "collar_left_upper_x": 1158,
+      "collar_left_upper_y": 1011
+    }
+  },
+  "WIN_20250717_14_49_36_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_49_36_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 992,
+      "longi_left_lower_y": 1200,
+      "longi_right_lower_x": 2305,
+      "longi_right_lower_y": 1224,
+      "longi_left_upper_x": 982,
+      "longi_left_upper_y": 589,
+      "longi_right_upper_x": 2332,
+      "longi_right_upper_y": 606,
+      "collar_left_lower_x": 1298,
+      "collar_left_lower_y": 1204,
+      "collar_left_upper_x": 1300,
+      "collar_left_upper_y": 595
+    }
+  },
+  "WIN_20250717_14_49_50_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_49_50_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 961,
+      "longi_left_lower_y": 1411,
+      "longi_right_lower_x": 2204,
+      "longi_right_lower_y": 1419,
+      "longi_left_upper_x": 970,
+      "longi_left_upper_y": 834,
+      "longi_right_upper_x": 2211,
+      "longi_right_upper_y": 845,
+      "collar_left_lower_x": 1255,
+      "collar_left_lower_y": 1412,
+      "collar_left_upper_x": 1266,
+      "collar_left_upper_y": 834
+    }
+  },
+  "WIN_20250717_14_49_53_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_49_53_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 994,
+      "longi_left_lower_y": 1518,
+      "longi_right_lower_x": 2247,
+      "longi_right_lower_y": 1522,
+      "longi_left_upper_x": 1006,
+      "longi_left_upper_y": 937,
+      "longi_right_upper_x": 2243,
+      "longi_right_upper_y": 939,
+      "collar_left_lower_x": 1286,
+      "collar_left_lower_y": 1515,
+      "collar_left_upper_x": 1298,
+      "collar_left_upper_y": 936
+    }
+  },
+  "WIN_20250717_14_50_00_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_50_00_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 991,
+      "longi_left_lower_y": 1368,
+      "longi_right_lower_x": 2226,
+      "longi_right_lower_y": 1538,
+      "longi_left_upper_x": 1067,
+      "longi_left_upper_y": 798,
+      "longi_right_upper_x": 2304,
+      "longi_right_upper_y": 962,
+      "collar_left_lower_x": 1276,
+      "collar_left_lower_y": 1405,
+      "collar_left_upper_x": 1357,
+      "collar_left_upper_y": 840
+    }
+  },
+  "WIN_20250717_14_50_04_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_50_04_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1009,
+      "longi_left_lower_y": 1296,
+      "longi_right_lower_x": 2233,
+      "longi_right_lower_y": 1493,
+      "longi_left_upper_x": 1093,
+      "longi_left_upper_y": 735,
+      "longi_right_upper_x": 2319,
+      "longi_right_upper_y": 917,
+      "collar_left_lower_x": 1290,
+      "collar_left_lower_y": 1338,
+      "collar_left_upper_x": 1380,
+      "collar_left_upper_y": 781
+    }
+  },
+  "WIN_20250717_14_50_07_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_50_07_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1061,
+      "longi_left_lower_y": 1442,
+      "longi_right_lower_x": 2281,
+      "longi_right_lower_y": 1228,
+      "longi_left_upper_x": 960,
+      "longi_left_upper_y": 876,
+      "longi_right_upper_x": 2192,
+      "longi_right_upper_y": 667,
+      "collar_left_lower_x": 1346,
+      "collar_left_lower_y": 1391,
+      "collar_left_upper_x": 1251,
+      "collar_left_upper_y": 826
+    }
+  },
+  "WIN_20250717_14_50_14_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_50_14_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1034,
+      "longi_left_lower_y": 1414,
+      "longi_right_lower_x": 2244,
+      "longi_right_lower_y": 1245,
+      "longi_left_upper_x": 952,
+      "longi_left_upper_y": 852,
+      "longi_right_upper_x": 2174,
+      "longi_right_upper_y": 687,
+      "collar_left_lower_x": 1317,
+      "collar_left_lower_y": 1373,
+      "collar_left_upper_x": 1244,
+      "collar_left_upper_y": 813
+    }
+  },
+  "WIN_20250717_14_50_17_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_50_17_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 1037,
+      "longi_left_lower_y": 909,
+      "longi_right_lower_x": 2236,
+      "longi_right_lower_y": 908,
+      "longi_left_upper_x": 1001,
+      "longi_left_upper_y": 342,
+      "longi_right_upper_x": 2264,
+      "longi_right_upper_y": 335,
+      "collar_left_lower_x": 1316,
+      "collar_left_lower_y": 912,
+      "collar_left_upper_x": 1303,
+      "collar_left_upper_y": 339
+    }
+  },
+  "WIN_20250717_14_55_26_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_26_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 473,
+      "longi_left_lower_y": 1569,
+      "longi_right_lower_x": 2792,
+      "longi_right_lower_y": 1574,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2836,
+      "longi_right_upper_y": 449,
+      "collar_left_lower_x": 2068,
+      "collar_left_lower_y": 1573,
+      "collar_left_upper_x": 2081,
+      "collar_left_upper_y": 557
+    }
+  },
+  "WIN_20250717_14_55_31_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_31_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 530,
+      "longi_left_lower_y": 1617,
+      "longi_right_lower_x": 2813,
+      "longi_right_lower_y": 1631,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2856,
+      "longi_right_upper_y": 526,
+      "collar_left_lower_x": 2091,
+      "collar_left_lower_y": 1627,
+      "collar_left_upper_x": 2099,
+      "collar_left_upper_y": 630
+    }
+  },
+  "WIN_20250717_14_55_34_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_34_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 504,
+      "longi_left_lower_y": 1275,
+      "longi_right_lower_x": 2708,
+      "longi_right_lower_y": 1605,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2940,
+      "longi_right_upper_y": 528,
+      "collar_left_lower_x": 2013,
+      "collar_left_lower_y": 1499,
+      "collar_left_upper_x": 2192,
+      "collar_left_upper_y": 437
+    }
+  },
+  "WIN_20250717_14_55_36_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_36_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 644,
+      "longi_left_lower_y": 1646,
+      "longi_right_lower_x": 2873,
+      "longi_right_lower_y": 1309,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2769,
+      "longi_right_upper_y": 208,
+      "collar_left_lower_x": 2173,
+      "collar_left_lower_y": 1412,
+      "collar_left_upper_x": 2030,
+      "collar_left_upper_y": 337
+    }
+  },
+  "WIN_20250717_14_55_44_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_44_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 580,
+      "longi_left_lower_y": 1573,
+      "longi_right_lower_x": 2676,
+      "longi_right_lower_y": 1548,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2688,
+      "longi_right_upper_y": 532,
+      "collar_left_lower_x": 2023,
+      "collar_left_lower_y": 1557,
+      "collar_left_upper_x": 2018,
+      "collar_left_upper_y": 549
+    }
+  },
+  "WIN_20250717_14_55_47_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_47_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 566,
+      "longi_left_lower_y": 1495,
+      "longi_right_lower_x": 2658,
+      "longi_right_lower_y": 1487,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2689,
+      "longi_right_upper_y": 473,
+      "collar_left_lower_x": 2004,
+      "collar_left_lower_y": 1495,
+      "collar_left_upper_x": 2013,
+      "collar_left_upper_y": 487
+    }
+  },
+  "WIN_20250717_14_55_49_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_49_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 566,
+      "longi_left_lower_y": 1392,
+      "longi_right_lower_x": 2643,
+      "longi_right_lower_y": 1625,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2780,
+      "longi_right_upper_y": 614,
+      "collar_left_lower_x": 1989,
+      "collar_left_lower_y": 1550,
+      "collar_left_upper_x": 2100,
+      "collar_left_upper_y": 557
+    }
+  },
+  "WIN_20250717_14_55_52_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_52_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 618,
+      "longi_left_lower_y": 1642,
+      "longi_right_lower_x": 2679,
+      "longi_right_lower_y": 1371,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2586,
+      "longi_right_upper_y": 385,
+      "collar_left_lower_x": 2043,
+      "collar_left_lower_y": 1458,
+      "collar_left_upper_x": 1933,
+      "collar_left_upper_y": 475
+    }
+  },
+  "WIN_20250717_14_55_55_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_55_55_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 594,
+      "longi_left_lower_y": 1263,
+      "longi_right_lower_x": 2643,
+      "longi_right_lower_y": 1262,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2714,
+      "longi_right_upper_y": 252,
+      "collar_left_lower_x": 2004,
+      "collar_left_lower_y": 1263,
+      "collar_left_upper_x": 2029,
+      "collar_left_upper_y": 266
+    }
+  },
+  "WIN_20250717_14_56_06_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_06_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 704,
+      "longi_left_lower_y": 1532,
+      "longi_right_lower_x": 2555,
+      "longi_right_lower_y": 1545,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2560,
+      "longi_right_upper_y": 654,
+      "collar_left_lower_x": 1974,
+      "collar_left_lower_y": 1545,
+      "collar_left_upper_x": 1974,
+      "collar_left_upper_y": 660
+    }
+  },
+  "WIN_20250717_14_56_09_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_09_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 666,
+      "longi_left_lower_y": 1552,
+      "longi_right_lower_x": 2527,
+      "longi_right_lower_y": 1550,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2530,
+      "longi_right_upper_y": 663,
+      "collar_left_lower_x": 1947,
+      "collar_left_lower_y": 1553,
+      "collar_left_upper_x": 1947,
+      "collar_left_upper_y": 672
+    }
+  },
+  "WIN_20250717_14_56_13_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_13_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 534,
+      "longi_left_lower_y": 1515,
+      "longi_right_lower_x": 2393,
+      "longi_right_lower_y": 1769,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2509,
+      "longi_right_upper_y": 885,
+      "collar_left_lower_x": 1822,
+      "collar_left_lower_y": 1692,
+      "collar_left_upper_x": 1937,
+      "collar_left_upper_y": 811
+    }
+  },
+  "WIN_20250717_14_56_16_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_16_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 673,
+      "longi_left_lower_y": 1774,
+      "longi_right_lower_x": 2522,
+      "longi_right_lower_y": 1518,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2397,
+      "longi_right_upper_y": 652,
+      "collar_left_lower_x": 1957,
+      "collar_left_lower_y": 1599,
+      "collar_left_upper_x": 1841,
+      "collar_left_upper_y": 726
+    }
+  },
+  "WIN_20250717_14_56_22_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_22_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 852,
+      "longi_left_lower_y": 1715,
+      "longi_right_lower_x": 2700,
+      "longi_right_lower_y": 1435,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2568,
+      "longi_right_upper_y": 547,
+      "collar_left_lower_x": 2122,
+      "collar_left_lower_y": 1522,
+      "collar_left_upper_x": 1984,
+      "collar_left_upper_y": 642
+    }
+  },
+  "WIN_20250717_14_56_30_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_30_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 727,
+      "longi_left_lower_y": 1241,
+      "longi_right_lower_x": 2517,
+      "longi_right_lower_y": 1210,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2556,
+      "longi_right_upper_y": 327,
+      "collar_left_lower_x": 1955,
+      "collar_left_lower_y": 1223,
+      "collar_left_upper_x": 1956,
+      "collar_left_upper_y": 345
+    }
+  },
+  "WIN_20250717_14_56_45_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_45_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 810,
+      "longi_left_lower_y": 1675,
+      "longi_right_lower_x": 2526,
+      "longi_right_lower_y": 1660,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2495,
+      "longi_right_upper_y": 830,
+      "collar_left_lower_x": 1985,
+      "collar_left_lower_y": 1662,
+      "collar_left_upper_x": 1966,
+      "collar_left_upper_y": 842
+    }
+  },
+  "WIN_20250717_14_56_51_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_56_51_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 845,
+      "longi_left_lower_y": 1621,
+      "longi_right_lower_x": 2559,
+      "longi_right_lower_y": 1601,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2523,
+      "longi_right_upper_y": 771,
+      "collar_left_lower_x": 2017,
+      "collar_left_lower_y": 1604,
+      "collar_left_upper_x": 1989,
+      "collar_left_upper_y": 790
+    }
+  },
+  "WIN_20250717_14_57_03_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_57_03_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 776,
+      "longi_left_lower_y": 1058,
+      "longi_right_lower_x": 2324,
+      "longi_right_lower_y": 1532,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2577,
+      "longi_right_upper_y": 786,
+      "collar_left_lower_x": 1832,
+      "collar_left_lower_y": 1387,
+      "collar_left_upper_x": 2060,
+      "collar_left_upper_y": 641
+    }
+  },
+  "WIN_20250717_14_57_11_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_57_11_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 972,
+      "longi_left_lower_y": 1455,
+      "longi_right_lower_x": 2614,
+      "longi_right_lower_y": 1182,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2503,
+      "longi_right_upper_y": 376,
+      "collar_left_lower_x": 2092,
+      "collar_left_lower_y": 1271,
+      "collar_left_upper_x": 1964,
+      "collar_left_upper_y": 473
+    }
+  },
+  "WIN_20250717_14_57_15_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_57_15_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 864,
+      "longi_left_lower_y": 1257,
+      "longi_right_lower_x": 2528,
+      "longi_right_lower_y": 1254,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2564,
+      "longi_right_upper_y": 443,
+      "collar_left_lower_x": 2004,
+      "collar_left_lower_y": 1257,
+      "collar_left_upper_x": 2012,
+      "collar_left_upper_y": 449
+    }
+  },
+  "WIN_20250717_14_57_40_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_57_40_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 903,
+      "longi_left_lower_y": 1564,
+      "longi_right_lower_x": 2422,
+      "longi_right_lower_y": 1517,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2412,
+      "longi_right_upper_y": 790,
+      "collar_left_lower_x": 1943,
+      "collar_left_lower_y": 1532,
+      "collar_left_upper_x": 1921,
+      "collar_left_upper_y": 806
+    }
+  },
+  "WIN_20250717_14_57_43_Pro_welding_debug": {
+    "image": "dataset\\images\\test\\WIN_20250717_14_57_43_Pro_welding_debug.png",
+    "coordinates": {
+      "longi_left_lower_x": 922,
+      "longi_left_lower_y": 1558,
+      "longi_right_lower_x": 2448,
+      "longi_right_lower_y": 1537,
+      "longi_left_upper_x": 0,
+      "longi_left_upper_y": 0,
+      "longi_right_upper_x": 2444,
+      "longi_right_upper_y": 797,
+      "collar_left_lower_x": 1966,
+      "collar_left_lower_y": 1548,
+      "collar_left_upper_x": 1949,
+      "collar_left_upper_y": 817
+    }
+  }
+}
