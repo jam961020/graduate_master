@@ -3,7 +3,7 @@
 
 Repository: https://github.com/jam961020/graduate_master
 
-**최종 업데이트: 2025.11.11 19:35**
+**최종 업데이트: 2025.11.11 20:30**
 
 ## 📌 대전제
 
@@ -13,6 +13,33 @@ Repository: https://github.com/jam961020/graduate_master
 - **⚠️ 하드코딩으로 우회하지 말고 문제의 본질을 해결하라**
 - **⚠️ 임시 해결책 사용 시 반드시 TODO 주석을 남겨라**
 - **⚠️ NEXT_SESSION.md 파일이 본 파일보다 더 자세한 다음 task를 담고있다. 읽고 시작하라**
+
+## 🎯 BoRisk 알고리즘 핵심 원리 (완벽 이해 완료)
+
+### 기본 구조
+1. **초기화**: n_initial개 (x,w) 쌍을 실제로 평가
+2. **매 iteration**: **단 1개 (x,w) 쌍만 실제 평가!** (113개 전체 아님!)
+3. **CVaR 계산**: GP의 판타지 샘플링으로 계산 (실제 평가 아님!)
+4. **w_set**: 획득 함수에서 판타지로만 사용 (10~20개 샘플)
+
+### 현재 구현의 Critical 문제
+**⚠️ 현재 코드는 BoRisk가 아닌 Vanilla BO + CVaR objective!**
+
+| 항목 | 현재 (잘못됨) | BoRisk (올바름) |
+|------|--------------|----------------|
+| **평가 개수** | 매번 113개 전체 | 매번 n_w개 (10~20개) |
+| **GP 모델** | x → y | (x, w) → y |
+| **획득 함수** | EI/UCB | ρKG (qMFKG) |
+| **CVaR 계산** | 직접 평가 | GP 샘플링 |
+| **속도** | 매우 느림 | 빠름 (1/10) |
+
+### BoRisk 필수 구성 요소 (현재 누락됨)
+1. ✅ 환경 벡터 추출 (`environment_independent.py`)
+2. ❌ w_set 샘플링 및 AppendFeatures
+3. ❌ GP 모델: (x, w) → y 학습
+4. ❌ qMultiFidelityKnowledgeGradient 획득 함수
+5. ❌ CVaR objective 통합
+6. ❌ 판타지 관측 구조
 ---
 
 ## 🤖 Claude 협업 환경
@@ -47,76 +74,108 @@ graduate_master/
 
 ---
 
-## 🎯 현재 작업 상태 (2025.11.11 19:35)
+## 🎯 현재 작업 상태 (2025.11.11 20:30)
 
 ### ✅ 완료된 작업
 
-#### 1. CRG311 Linux 빌드 (완료 19:00)
+#### 1. BoRisk 알고리즘 완벽 이해 (완료 20:05)
+- BoRisk 논문 및 BoTorch 튜토리얼 분석 완료
+- 핵심 원리 파악: 매 iteration 1개 (x,w) 쌍만 평가
+- w_set 샘플링, GP 판타지, qMFKG 획득함수 구조 이해
+- `optimization_borisk.py` 발견 (기존 구현 존재)
+
+#### 2. CRG311 Linux 빌드 (완료 19:00)
 - AirLine 공식 리포에서 C++ 소스 컴파일
 - pybind11로 Linux .so 생성
 - 경로 수정 및 lazy initialization 적용
 
-#### 2. 평가 메트릭 변경 (완료 19:28)
+#### 3. 평가 메트릭 변경 (완료 19:28)
 - **끝점 기반 → 직선 방정식 기반**
 - `line_equation_evaluation()` 함수 추가 (optimization.py:39-116)
 - Ax + By + C = 0 형식으로 정규화
 - 방향 유사도 (법선 벡터 내적) + 평행 거리
 - 가중치: direction 60%, distance 40%
 
-#### 3. RANSAC 가중치 최적화 (완료 19:28)
+#### 4. RANSAC 가중치 최적화 (완료 19:28)
 - **6D → 9D 확장**
 - BOUNDS 업데이트: 9D [AirLine 6D + RANSAC 3D]
 - `ransac_center_w`, `ransac_length_w`, `ransac_consensus_w` 추가
 - Sobol 엔진 차원 수정: dimension=9
 - objective_function에 파라미터 전달 구현
 
-#### 4. 로깅 최적화 (완료 19:28)
+#### 5. 로깅 최적화 (완료 19:28)
 - 화면 출력 최소화 (토큰 절약)
 - 상세 로그를 `logs/iter_XXX.json`로 파일 저장
 - 각 반복마다 9D 파라미터, CVaR, 획득함수 값 기록
 
+#### 6. 환경 벡터 추출 구현 (완료)
+- `environment_independent.py` - 6D 환경 특징 추출
+- brightness, contrast, edge_density, texture_complexity, blur_level, noise_level
+
 ### 🔄 진행 중
 
-- **테스트 실행 중** (백그라운드 프로세스)
-- 명령: `python optimization.py --iterations 2 --n_initial 3 --alpha 0.3`
-- 로그: `new_test.log`, `logs/iter_*.json`
+- **이전 테스트 결과 확인 필요**
+- 로그: `new_test.log` (초기 샘플링 단계에서 멈춤)
+- 결과: `results/bo_cvar_20251111_191029.json` (19:10 실행)
 
-### 🔴 남은 주요 문제점
+### 🔴 Critical 문제점 - 최우선 해결 필요
 
-#### 1. CVaR 계산 방식 (Critical)
-- **현재**: 직접 평가 사용 (모든 이미지에 대해 실제로 실행)
-- **문제**: BoRisk 논문에서는 GP를 활용한 CVaR 계산 필요
-- **필요한 것**:
-  - GP로부터 예측 분포 샘플링
-  - 샘플링된 분포에서 CVaR 계산
-  - TODO: `optimization.py:217-273` 수정 필요
+#### 1. BoRisk 알고리즘 구조 완전 누락 (CRITICAL - 최우선)
+**현재 코드는 BoRisk가 아니라 Vanilla BO + CVaR objective!**
 
-#### 2. 환경 변수 미사용 (Critical)
-- `environment_independent.py`에 6D 환경 벡터 구현되어 있으나 **optimization.py에서 전혀 사용 안 함**
-- GP가 (x, z) → y 학습하지 않고 x → y만 학습 (일반 BO와 동일)
-- BoRisk의 핵심인 이미지별 환경 컨디셔닝 누락
-- TODO: 9D → 15D 확장 (params 9D + env 6D)
-- `optimization.py`의 BOUNDS가 6D만 정의 (9D로 확장 필요)
-- ransac_center_w, ransac_length_w, ransac_consensus_w 하드코딩됨
+**문제점**:
+```python
+# optimization.py:217-273 - 매 iteration마다 113개 이미지 전부 평가
+def objective_function(X, images_data, yolo_detector, alpha=0.3):
+    scores = []
+    for img_data in images_data:  # 113개 전체 순회!
+        score = line_equation_evaluation(...)
+        scores.append(score)
+    cvar = np.mean(np.sort(scores)[:n_worst])  # 직접 CVaR 계산
+```
 
-#### 3. 판타지 관측 미구현 (Critical)
-- **BoRisk의 핵심 알고리즘 완전히 누락**
-- 현재는 단순 Vanilla BO + CVaR 목적함수
-- 필요: CVaR Knowledge Gradient 획득함수, fantasy observation
+**BoRisk 올바른 방식**:
+```python
+# 1. w_set 샘플링 (10~20개만)
+w_set, w_indices = sample_w_set(all_env_features, n_w=15)
 
-#### 4. 평가 메트릭 문제 (High)
-- 현재: 끝점 좌표 기반 평가
-- 문제: AirLine의 끝점 검출이 부실함
-- 해결: 직선 방정식 기반 (기울기 + 절편) 평가로 변경 필요
+# 2. GP 모델: (x, w) → y
+model = SingleTaskGP(
+    train_X,  # [N, 9] params만
+    train_Y,  # [N*n_w, 1] 각 x마다 n_w개 환경
+    input_transform=AppendFeatures(feature_set=w_set)
+)
 
-#### 5. 환경 표현 개선 필요 (Medium)
-- 현재 6D 환경 벡터가 이미지 특성 충분히 반영 못함
-- 추가 필요: CLIP 기반 그림자/노이즈 검출, PSNR/SSIM 메트릭
+# 3. qMFKG 획득 함수 + CVaR objective
+acqf = qMultiFidelityKnowledgeGradient(
+    model=model,
+    num_fantasies=64,
+    objective=GenericMCObjective(cvar_objective)
+)
 
-#### 6. 워크스테이션 호환성 (Blocker)
-- `CRG311.pyd` (Windows 전용) → Linux 환경에서 import 실패
-- AirLine 코어 모듈 `crg.desGrow()` 사용 불가
-- 해결: github.com/sair-lab/AirLine의 Linux 빌드 설치 필요
+# 4. 매 iteration: n_w개만 평가 (15개, 113개 아님!)
+candidate = optimize_acqf(acqf, bounds, q=1)
+observations = evaluate_on_w_set(candidate, w_indices)  # 15개만!
+```
+
+**필요한 수정**:
+- [ ] w_set 샘플링 함수 구현
+- [ ] AppendFeatures input_transform 추가
+- [ ] GP 모델 구조 변경: x → y에서 (x,w) → y로
+- [ ] qMultiFidelityKnowledgeGradient 획득 함수 적용
+- [ ] CVaR objective 통합
+- [ ] evaluate_on_w_set 함수로 평가 방식 변경
+
+#### 2. 환경 변수 미통합 (CRITICAL)
+- `environment_independent.py` 구현되어 있으나 **optimization.py에서 전혀 사용 안 함**
+- GP가 (x, z) → y 학습하지 않고 x → y만 학습
+- BoRisk의 핵심인 환경 조건부 예측 누락
+- TODO: 환경 벡터를 w로 사용하여 GP 입력 구성
+
+#### 3. 평가 효율성 (CRITICAL)
+- 매번 113개 이미지 전체 평가 → 매우 느림
+- BoRisk는 매번 10~20개만 평가 → 10배 빠름
+- 현재 구조로는 실험 불가능 (시간 초과)
 
 ### 완료된 작업
 - ✅ 코드 워크스테이션 이식
