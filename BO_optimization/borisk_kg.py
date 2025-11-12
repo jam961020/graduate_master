@@ -46,21 +46,32 @@ class BoRiskAcquisition:
         # GP의 학습 데이터에서 최적 x 찾기
         train_X = self.gp.train_inputs[0]  # [N, 15]
         train_Y = self.gp.train_targets      # [N]
-        
-        # x별로 그룹화 (처음 9차원이 같은 것끼리)
-        unique_x = []
-        x_cvars = []
-        
-        # 간단히 처리: 마지막 n_w개가 하나의 x에 대한 평가라고 가정
-        if len(train_Y) >= self.n_w:
-            last_scores = train_Y[-self.n_w:]
-            n_worst = max(1, int(self.n_w * self.alpha))
-            worst_scores, _ = torch.topk(last_scores, n_worst, largest=False)
-            current_cvar = worst_scores.mean().item()
-        else:
-            current_cvar = train_Y.min().item()
-            
-        return current_cvar
+
+        # x별로 CVaR 계산 (N개 샘플을 n_w 단위로 묶음)
+        n_samples = len(train_Y)
+        n_groups = n_samples // self.n_w
+
+        if n_groups == 0:
+            return train_Y.max().item()
+
+        best_cvar = float('-inf')
+        n_worst = max(1, int(self.n_w * self.alpha))
+
+        # 각 x에 대해 CVaR 계산
+        for i in range(n_groups):
+            start_idx = i * self.n_w
+            end_idx = start_idx + self.n_w
+            group_scores = train_Y[start_idx:end_idx]
+
+            # CVaR 계산 (worst alpha%)
+            worst_scores, _ = torch.topk(group_scores, n_worst, largest=False)
+            cvar = worst_scores.mean().item()
+
+            # 최대 CVaR 갱신 (maximize)
+            if cvar > best_cvar:
+                best_cvar = cvar
+
+        return best_cvar
     
     def compute_kg_value(self, x_candidate):
         """
