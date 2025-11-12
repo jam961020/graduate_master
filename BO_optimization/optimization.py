@@ -43,14 +43,17 @@ BOUNDS = torch.tensor([
 def line_equation_evaluation(detected_coords, gt_coords, image_size=(640, 480),
                             direction_weight=0.6, distance_weight=0.4):
     """
-    직선 방정식 기반 평가: 방향 유사도 + 평행 거리
-    끝점이 아닌 직선 자체의 방정식으로 평가
+    직선 방정식 기반 평가: 기울기 차이 + 평행 거리
+
+    방향 평가를 기울기 차이로 변경 (코사인 유사도 대신):
+    - 기울기 틀어짐에 더 민감하게 반응
+    - 작은 각도 차이도 확실히 페널티
 
     Args:
         detected_coords: 검출된 좌표 dict
         gt_coords: GT 좌표 dict
         image_size: (width, height)
-        direction_weight: 방향 가중치
+        direction_weight: 방향 가중치 (기울기 차이)
         distance_weight: 거리 가중치
 
     Returns:
@@ -99,8 +102,17 @@ def line_equation_evaluation(detected_coords, gt_coords, image_size=(640, 480),
         A_gt, B_gt, C_gt = to_line_eq(gt_x1, gt_y1, gt_x2, gt_y2)
         A_det, B_det, C_det = to_line_eq(det_x1, det_y1, det_x2, det_y2)
 
-        # 1. 방향 유사도 (법선 벡터 내적)
-        direction_sim = abs(A_gt*A_det + B_gt*B_det)  # [0, 1]
+        # 1. 방향 유사도 (기울기 차이 기반)
+        # 기울기: slope = -A/B (B=0이면 수직선)
+        slope_gt = -A_gt / B_gt if abs(B_gt) > 1e-6 else 1e6  # 매우 큰 값 (수직)
+        slope_det = -A_det / B_det if abs(B_det) > 1e-6 else 1e6
+
+        # 기울기 차이 (절댓값이 클수록 심각한 틀어짐)
+        slope_diff = abs(slope_gt - slope_det)
+
+        # [0, 1] 정규화: 기울기 차이 0 → 1.0, 큰 차이 → 0에 가까움
+        # 스케일 파라미터: 0.5 차이면 약 0.67점, 1.0 차이면 0.5점, 2.0 차이면 0.33점
+        direction_sim = 1.0 / (1.0 + slope_diff)
 
         # 2. 평행 거리 (GT 직선의 중점에서 검출 직선까지)
         mid_x = (gt_x1 + gt_x2) / 2

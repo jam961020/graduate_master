@@ -2,7 +2,69 @@
 
 **프로젝트:** BoRisk CVaR Optimization for Welding Line Detection
 **시작일:** 2025.11.11
-**환경:** Workstation (Linux, CUDA 12.4)
+**환경:** Windows 로컬 (Linux segfault로 회귀)
+
+---
+
+## 🔥 최신 업데이트 (2025.11.13)
+
+### ✅ Full BoRisk-KG 판타지 관측 활성화 (2025.11.13 02:30)
+
+**문제:**
+- `posterior.rsample()`이 `[1, n_w, 1]` shape 반환
+- `train_Y`는 `[N]` shape (1D)
+- torch.cat 실패: "Tensors must have same number of dimensions"
+
+**해결:**
+- `fantasy_obs`를 `squeeze()`로 1D 변환
+- `_create_fantasy_model`에서 dimension 체크 추가
+
+**결과:**
+- ✅ Full BoRisk-KG 정상 작동
+- ✅ 16개 판타지 관측 생성 확인
+- ✅ "Using BoRisk-KG" 출력 (이전: "Simplified-CVaR-KG")
+
+**파일:** `borisk_kg.py:90-111`, `optimization.py:699-701`
+
+---
+
+### ✅ 평가 Metric 개선: 기울기 차이 기반 (2025.11.13 02:40)
+
+**문제 발견:**
+- 이전: 코사인 유사도 사용 `abs(A_gt*A_det + B_gt*B_det)`
+- 작은 각도 차이에 둔감: cos(1°) ≈ 0.9998, cos(5°) ≈ 0.9962
+- **CVaR이 0.99+ 로 너무 높음** → 구분력 부족
+
+**변경 내용:**
+```python
+# 이전 (코사인 유사도)
+direction_sim = abs(A_gt*A_det + B_gt*B_det)
+
+# 현재 (기울기 차이)
+slope_gt = -A_gt / B_gt if abs(B_gt) > 1e-6 else 1e6
+slope_det = -A_det / B_det if abs(B_det) > 1e-6 else 1e6
+slope_diff = abs(slope_gt - slope_det)
+direction_sim = 1.0 / (1.0 + slope_diff)
+```
+
+**Metric 구성 (optimization.py:43-119):**
+1. **방향 유사도 (60%)**: 기울기 차이 기반
+   - slope = -A/B (직선 방정식 Ax + By + C = 0)
+   - 정규화: `1/(1 + |slope_diff|)`
+   - 기울기 차이 0 → 1.0, 0.5 차이 → 0.67, 1.0 차이 → 0.5
+
+2. **평행 거리 (40%)**: GT 중점에서 검출 직선까지
+   - GT 중점: `(mid_x, mid_y) = ((x1+x2)/2, (y1+y2)/2)`
+   - 수직 거리: `|A_det*mid_x + B_det*mid_y + C_det|`
+   - threshold: 대각선의 5%
+   - 정규화: `max(0, 1 - dist/threshold)`
+
+**결과:**
+- ✅ CVaR: **0.99+ → 0.39~0.47** (현실적!)
+- ✅ 기울기 틀어짐에 훨씬 민감
+- ✅ 10 iterations 테스트에서 일관된 범위 유지
+
+**파일:** `optimization.py:43-119`
 
 ---
 
