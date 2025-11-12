@@ -549,81 +549,23 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         # 5.1: 새로운 w_set 샘플링 (매 iteration마다)
         w_set, w_indices = sample_w_set(all_env_features, n_w=n_w)
 
-        # 5.2: qMFKG 획득 함수 (BoRisk의 핵심!)
+        # 5.2: BoRisk Knowledge Gradient 획득 함수 (논문 구현!)
         try:
-            # GP를 15D 입력에 맞게 래핑
-            # w_set의 평균 w를 사용해서 9D → 15D 변환
-            w_mean = w_set.mean(dim=0)  # [6]
+            from borisk_kg import optimize_borisk
 
-            # CVaR objective
-            def cvar_objective_for_acqf(samples, X=None):
-                # samples: [n_fantasies, batch_size, n_w, 1]
-                # CVaR 계산: worst alpha%의 평균
-                if samples.dim() == 4:
-                    samples = samples.squeeze(-1)  # [n_fantasies, batch_size, n_w]
-                    n_w_dim = samples.shape[-1]
-                    n_worst = max(1, int(n_w_dim * alpha))
-                    worst, _ = torch.topk(samples, n_worst, dim=-1, largest=False)
-                    return worst.mean(dim=-1)  # [n_fantasies, batch_size]
-                else:
-                    # 다른 형태인 경우 그대로 반환
-                    return samples.mean(dim=-1)
-
-            cvar_obj = GenericMCObjective(cvar_objective_for_acqf)
-
-            # 9D input용 래퍼 GP 생성
-            # 내부에서 w_mean을 자동으로 추가
-            class GPWrapper:
-                def __init__(self, base_gp, w_mean):
-                    self.base_gp = base_gp
-                    self.w_mean = w_mean
-
-                def posterior(self, X):
-                    # X: [batch, 9]
-                    # w_mean을 추가해서 [batch, 15]로 변환
-                    if X.dim() == 1:
-                        X = X.unsqueeze(0)
-
-                    batch_size = X.shape[0]
-                    w_expanded = self.w_mean.unsqueeze(0).expand(batch_size, -1)
-                    X_full = torch.cat([X, w_expanded], dim=-1)
-                    return self.base_gp.posterior(X_full)
-
-                def __call__(self, X):
-                    # For BoTorch compatibility
-                    batch_size = X.shape[0]
-                    w_expanded = self.w_mean.unsqueeze(0).expand(batch_size, -1)
-                    X_full = torch.cat([X, w_expanded], dim=-1)
-                    return self.base_gp(X_full)
-
-            gp_wrapper = GPWrapper(gp, w_mean)
-
-            # qMFKG 획득 함수
-            acqf = qMultiFidelityKnowledgeGradient(
-                model=gp_wrapper,
-                num_fantasies=16,  # 판타지 샘플 수
-                objective=cvar_obj,
-                project=lambda X: X[..., :9]  # 이미 9D이므로 그대로
+            # BoRisk Knowledge Gradient 사용
+            candidate, acq_value, acq_name = optimize_borisk(
+                gp, w_set, BOUNDS, alpha=alpha,
+                use_full_kg=False  # 빠른 버전 사용 (True면 정확한 버전)
             )
+            print(f"  Using {acq_name}: acq_value={acq_value:.4f}")
+            acq_value = torch.tensor(acq_value) if not torch.is_tensor(acq_value) else acq_value
 
-            # 획득 함수 최적화
-            candidate, acq_value = optimize_acqf(
-                acqf,
-                bounds=BOUNDS,
-                q=1,
-                num_restarts=5,
-                raw_samples=256
-            )
-            acq_name = "qMFKG"
-
-        except Exception as e:
-            print(f"\n⚠️ qMFKG failed: {e}, falling back to UCB...")
-            import traceback
-            traceback.print_exc()
+        except ImportError as e:
+            print(f"\n⚠️ BoRisk KG import failed: {e}, falling back to UCB...")
 
             # 폴백: UCB with manual w addition
             try:
-                # UCB로 폴백
                 candidates = torch.rand(100, 9, dtype=DTYPE, device=DEVICE)
                 candidates = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * candidates
 

@@ -6,22 +6,86 @@
 
 ---
 
-## ✅ 완료된 작업 (이전 세션)
+## ✅ 완료된 작업 (2025.11.12 세션)
 
 ### 1. Repository Clone 및 경로 수정 완료 ✓
 - 위치: `C:\Users\user\Desktop\study\task\graduate\graduate_master`
 - `test_clone_final.py` 모든 하드코딩 경로 수정
 - Windows 경로 → `__file__` 기준 절대 경로로 변경
 
-### 2. 실험 실행 확인 ✓
-- Windows 로컬 환경에서 무난하게 실행됨
-- 기본적인 BO-CVaR 최적화 작동 확인
+### 2. BoRisk KG 구현 완료 ✓
+- `borisk_kg.py` 추가: CVaR-KG 획득 함수
+- `optimization.py` 수정: borisk_kg 통합
+- `Simplified-CVaR-KG` 성공적으로 작동
+- qMFKG 문제 해결
+
+### 3. RANSAC 버그 수정 ✓
+- `full_pipeline.py`: 1개 선만 검출된 경우 처리 로직 추가
+- weighted_ransac_line 안정화
+
+### 4. 실험 분석 완료 ✓
+- GP noise level 의미 파악 (0.74 = 높음)
+- CVaR vs Mean 차이 분석 (alpha=0.3: 71.7% vs 91.8%)
+- alpha 조정 필요성 확인 → alpha=0.1로 실험 시작
 
 ---
 
-## 🎯 오늘의 최우선 작업 순서
+## 🎯 다음 세션 작업 (우선순위)
 
-### Priority 1: 자동 라벨링 시스템 구축 (최우선!)
+### ✅ 현재 진행 중
+- **실험 실행 중**: alpha=0.1, iterations=15, n_w=15, 전체 데이터셋
+- **예상 완료**: 30분~1시간
+- **결과 파일**: `results/bo_cvar_*.json`
+
+### Priority 1: 실험 결과 분석 (최우선!)
+
+**목표**: alpha=0.1 실험 결과 분석 및 추가 실험 계획
+
+**작업**:
+1. 실험 결과 확인
+   ```bash
+   # 결과 파일 확인
+   ls -lt results/ | head -5
+
+   # 최신 결과 보기
+   cat results/bo_cvar_*.json | tail -1
+   ```
+
+2. CVaR 개선도 분석
+   - 초기 CVaR vs 최종 CVaR
+   - alpha=0.1이 극단값에 집중했는가?
+   - 49%, 66% 같은 실패 케이스가 개선되었는가?
+
+3. 추가 실험 결정
+   - alpha=0.15, 0.2도 실험할지 결정
+   - n_w 조정 필요성 판단
+
+### Priority 2: 시각화 및 결과 정리 (High)
+
+**목표**: 논문용 Figure 및 분석 자료 생성
+
+**작업**:
+1. **visualization.py 작성**
+   - CVaR 개선 추이 그래프
+   - alpha별 성능 비교 (0.1 vs 0.3)
+   - 실패 케이스 분석
+
+2. **결과 요약 문서**
+   - 핵심 발견사항 정리
+   - 논문용 Table 생성
+
+### Priority 3: 추가 실험 (Medium)
+
+**다음 실험 후보**:
+```bash
+# alpha=0.15 (중간값)
+python optimization.py --alpha 0.15 --iterations 15 --n_initial 5 --n_w 15 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
+
+# alpha=0.2 (비교용)
+python optimization.py --alpha 0.2 --iterations 15 --n_initial 5 --n_w 15 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
+```
+
+### Priority 4: 자동 라벨링 시스템 구축 (이전 우선순위)
 
 **목표**: AirLine_assemble_test.py 결과로 GT 자동 생성
 
@@ -378,8 +442,8 @@ python visualization.py --results results/bo_cvar_*.json
 
 ---
 
-**마지막 업데이트**: 2025-11-12 22:30
-**다음 세션**: 자동 라벨링부터 시작!
-**Time Pressure**: 🚨 오늘 안에 결과 필요!
+**마지막 업데이트**: 2025-11-12 23:45
+**다음 세션**: 실험 결과 분석 및 시각화!
+**Status**: ✅ BoRisk KG 구현 완료, 실험 진행 중
 
 **화이팅! 졸업하자! 🎓**

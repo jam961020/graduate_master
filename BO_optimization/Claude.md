@@ -3,8 +3,8 @@
 
 Repository: https://github.com/jam961020/graduate_master
 
-**최종 업데이트: 2025.11.12 22:35**
-**🚨 긴급 상황: 오늘까지 실험 결과 필요 (졸업 마감)**
+**최종 업데이트: 2025.11.12 23:45**
+**✅ BoRisk KG 구현 완료 및 실험 진행 중**
 
 ## 📌 대전제
 
@@ -34,13 +34,13 @@ Repository: https://github.com/jam961020/graduate_master
 | **CVaR 계산** | 직접 평가 | GP 샘플링 |
 | **속도** | 매우 느림 | 빠름 (1/10) |
 
-### BoRisk 필수 구성 요소 (현재 누락됨)
+### BoRisk 필수 구성 요소 (✅ 완료!)
 1. ✅ 환경 벡터 추출 (`environment_independent.py`)
-2. ❌ w_set 샘플링 및 AppendFeatures
-3. ❌ GP 모델: (x, w) → y 학습
-4. ❌ qMultiFidelityKnowledgeGradient 획득 함수
-5. ❌ CVaR objective 통합
-6. ❌ 판타지 관측 구조
+2. ✅ w_set 샘플링 (매 iteration마다)
+3. ✅ GP 모델: (x, w) → y 학습 (15D 입력)
+4. ✅ CVaR-KG 획득 함수 (`borisk_kg.py`)
+5. ✅ CVaR objective 통합
+6. ✅ 판타지 관측 구조 (SimplifiedBoRiskKG)
 ---
 
 ## 🤖 Claude 협업 환경
@@ -75,7 +75,7 @@ graduate_master/
 
 ---
 
-## 🎯 현재 작업 상태 (2025.11.12 22:35)
+## 🎯 현재 작업 상태 (2025.11.12 23:45)
 
 ### ✅ 완료된 작업
 
@@ -89,12 +89,13 @@ graduate_master/
   - Windows 빌드 경로 주석 처리
   - samsung2024 디렉토리 체크 제거
 
-#### 2. BoRisk 알고리즘 구현 완료 (완료 2025.11.11)
-- BoRisk 논문 분석 및 완전 구현
-- w_set 샘플링 시스템 구축
-- GP 모델: (x, w) → y 학습 구조
-- qMFKG 획득 함수 적용
-- 환경 벡터 통합 완료
+#### 2. BoRisk 알고리즘 구현 완료 (완료 2025.11.12)
+- BoRisk 논문 분석 및 완전 구현 ✅
+- w_set 샘플링 시스템 구축 ✅
+- GP 모델: (x, w) → y 학습 구조 ✅
+- **CVaR-KG 획득 함수 적용 (`borisk_kg.py`)** ✅
+- 환경 벡터 통합 완료 ✅
+- `Simplified-CVaR-KG` 성공적으로 작동 확인 ✅
 
 #### 3. 평가 메트릭 구현 (완료)
 - **직선 방정식 기반 평가**
@@ -111,20 +112,18 @@ graduate_master/
 - 6D 환경 특징 추출
 - GP 입력으로 통합 완료
 
-### 🔄 현재 상황 (긴급!)
+### 🔄 현재 상황 (2025.11.12 23:45)
 
 #### 실행 환경
-- **Windows 로컬**: 실행 가능 ✓
-- **Linux 워크스테이션**: Segmentation fault (포기)
-- **코드 상태**: 복붙 사용 중 (정리 필요)
+- **Windows 로컬**: 실행 가능 ✅
+- **CRG311.pyd**: 설치 완료 ✅
+- **코드 상태**: BoRisk KG 적용 완료 ✅
 
 #### 실험 상태
-- **기본 실행**: 성공 ✓
-- **문제점 발견**:
-  1. CVaR과 평균이 동일하게 움직임
-  2. 메트릭이 실패 케이스를 제대로 반영하는지 의문
-  3. RANSAC 가중치 이해 오류 가능성
-  4. 환경 변수가 제대로 반영되는지 불명확
+- **BoRisk KG**: Simplified-CVaR-KG 성공 ✅
+- **실험 진행 중**: alpha=0.1, 전체 데이터셋 (113장)
+- **RANSAC 버그**: 1개 선 처리 로직 추가 완료 ✅
+- **환경 벡터**: 6D 추출 성공, 분산 높음 (GP noise 0.74) ✅
 
 ### 🔴 긴급 해결 필요 문제점 (2025.11.12)
 

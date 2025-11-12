@@ -173,6 +173,27 @@ def weighted_ransac_line(final_candidates, roi_w, roi_h,
     if not all_lines:
         return None
 
+    # ✅ 선이 1개만 있으면 그것을 바로 사용
+    if len(all_lines) == 1:
+        _, ln = all_lines[0]
+        x1, y1, x2, y2 = ln
+        # ROI 경계로 연장
+        cand = []
+        for ty in (0, roi_h):
+            if x2 != x1:
+                x = x1 + (x2 - x1) * (ty - y1) / (y2 - y1 + 1e-6)
+                if 0 <= x <= roi_w:
+                    cand.append((int(x), int(ty)))
+        for tx in (0, roi_w):
+            if y2 != y1:
+                y = y1 + (y2 - y1) * (tx - x1) / (x2 - x1 + 1e-6)
+                if 0 <= y <= roi_h:
+                    cand.append((int(tx), int(y)))
+        if len(cand) >= 2:
+            cand = sorted(list(set(cand)))
+            return (cand[0], cand[-1])
+        return None
+
     def line_len(ln):
         x1,y1,x2,y2 = ln
         return float(np.hypot(x2-x1, y2-y1))

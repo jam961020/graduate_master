@@ -1,0 +1,19 @@
+{
+  "iteration": 5,
+  "acq_function": "Simplified-CVaR-KG",
+  "acq_value": 2.3793835639953613,
+  "parameters": {
+    "edgeThresh1": -21.444880676490104,
+    "simThresh1": 0.9628218826056754,
+    "pixelRatio1": 0.08951040979857232,
+    "edgeThresh2": -7.619417326403211,
+    "simThresh2": 0.9179370187906518,
+    "pixelRatio2": 0.046733998941437746,
+    "ransac_center_w": 0.6801770991668137,
+    "ransac_length_w": 0.4610228304695618,
+    "ransac_consensus_w": 8
+  },
+  "cvar": 0.6445070758052314,
+  "mean_score": 0.9012111450989755,
+  "n_w": 15
+}
