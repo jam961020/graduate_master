@@ -33,10 +33,10 @@ from environment_independent import extract_parameter_independent_environment
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DTYPE = torch.double
 
-# 9D: AirLine 파라미터 (6D) + RANSAC 가중치 (3D)
+# 8D: AirLine 파라미터 (6D) + RANSAC 가중치 (2D: Q, QG)
 BOUNDS = torch.tensor([
-    [-23.0, 0.5, 0.01, -23.0, 0.5, 0.01, 0.0, 0.0, 1],
-    [7.0, 0.99, 0.15, 7.0, 0.99, 0.15, 1.0, 1.0, 10]
+    [-23.0, 0.5, 0.01, -23.0, 0.5, 0.01, 1.0, 1.0],
+    [7.0, 0.99, 0.15, 7.0, 0.99, 0.15, 20.0, 20.0]
 ], dtype=DTYPE, device=DEVICE)
 
 
@@ -285,7 +285,7 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
     w_set에 해당하는 이미지만 평가 (BoRisk의 핵심!)
 
     Args:
-        X: [1, 9] 파라미터
+        X: [1, 8] 파라미터
         images_data: 전체 이미지 데이터
         yolo_detector: YOLO 검출기
         w_indices: [n_w] 평가할 이미지 인덱스
@@ -300,13 +300,13 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
         'edgeThresh2': X[0, 3].item(),
         'simThresh2': X[0, 4].item(),
         'pixelRatio2': X[0, 5].item(),
-        'ransac_center_w': X[0, 6].item(),
-        'ransac_length_w': X[0, 7].item(),
-        'ransac_consensus_w': int(X[0, 8].item()),
     }
 
+    # RANSAC 가중치 (Q, QG 개별)
+    ransac_weights = (X[0, 6].item(), X[0, 7].item())
+
     scores = []
-    print(f"[DEBUG] Evaluating {len(w_indices)} images...")
+    print(f"[DEBUG] Evaluating {len(w_indices)} images with RANSAC weights (Q={ransac_weights[0]:.1f}, QG={ransac_weights[1]:.1f})...")
 
     for i, idx in enumerate(w_indices):
         try:
@@ -315,7 +315,7 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
             image = img_data['image']
             gt_coords = img_data['gt_coords']
 
-            detected_coords = detect_with_full_pipeline(image, params, yolo_detector)
+            detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
 
             h, w = image.shape[:2]
             score = line_equation_evaluation(detected_coords, gt_coords, image_size=(w, h))
@@ -383,7 +383,7 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
     CVaR 목적 함수
 
     Args:
-        X: [1, 9] 파라미터 (AirLine 6D + RANSAC 3D)
+        X: [1, 8] 파라미터 (AirLine 6D + RANSAC 2D: Q, QG)
         images_data: 전체 이미지 데이터
         yolo_detector: YOLO 검출기
         alpha: CVaR의 α (worst α% of cases)
@@ -399,10 +399,10 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
         'edgeThresh2': X[0, 3].item(),
         'simThresh2': X[0, 4].item(),
         'pixelRatio2': X[0, 5].item(),
-        'ransac_center_w': X[0, 6].item(),
-        'ransac_length_w': X[0, 7].item(),
-        'ransac_consensus_w': int(X[0, 8].item()),
     }
+
+    # RANSAC 가중치 (Q, QG 개별)
+    ransac_weights = (X[0, 6].item(), X[0, 7].item())
 
     scores = []
 
@@ -411,7 +411,7 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
             image = img_data['image']
             gt_coords = img_data['gt_coords']
 
-            detected_coords = detect_with_full_pipeline(image, params, yolo_detector)
+            detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
 
             h, w = image.shape[:2]
             score = line_equation_evaluation(detected_coords, gt_coords, image_size=(w, h))
@@ -465,7 +465,7 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     print(f"  - Each sample evaluated on {n_w} environments")
     print(f"  - Total evaluations: {n_initial * n_w}")
 
-    sobol = SobolEngine(dimension=9, scramble=True)
+    sobol = SobolEngine(dimension=8, scramble=True)  # 8D: AirLine 6D + RANSAC 2D
     X_init = sobol.draw(n_initial).to(dtype=DTYPE, device=DEVICE)
     X_init = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * X_init
 
@@ -673,9 +673,8 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 "edgeThresh2": float(candidate[0, 3].item()),
                 "simThresh2": float(candidate[0, 4].item()),
                 "pixelRatio2": float(candidate[0, 5].item()),
-                "ransac_center_w": float(candidate[0, 6].item()),
-                "ransac_length_w": float(candidate[0, 7].item()),
-                "ransac_consensus_w": int(candidate[0, 8].item()),
+                "ransac_weight_q": float(candidate[0, 6].item()),
+                "ransac_weight_qg": float(candidate[0, 7].item()),
             },
             "cvar": float(new_cvar),
             "mean_score": float(new_scores.mean().item()),
@@ -822,15 +821,14 @@ if __name__ == "__main__":
     
     # 결과 출력
     print("\n최적 파라미터:")
-    print(f"  edgeThresh1:        {best_params[0]:7.2f}")
-    print(f"  simThresh1:         {best_params[1]:7.4f}")
-    print(f"  pixelRatio1:        {best_params[2]:7.4f}")
-    print(f"  edgeThresh2:        {best_params[3]:7.2f}")
-    print(f"  simThresh2:         {best_params[4]:7.4f}")
-    print(f"  pixelRatio2:        {best_params[5]:7.4f}")
-    print(f"  ransac_center_w:    {best_params[6]:7.4f}")
-    print(f"  ransac_length_w:    {best_params[7]:7.4f}")
-    print(f"  ransac_consensus_w: {int(best_params[8]):7d}")
+    print(f"  edgeThresh1:      {best_params[0]:7.2f}")
+    print(f"  simThresh1:       {best_params[1]:7.4f}")
+    print(f"  pixelRatio1:      {best_params[2]:7.4f}")
+    print(f"  edgeThresh2:      {best_params[3]:7.2f}")
+    print(f"  simThresh2:       {best_params[4]:7.4f}")
+    print(f"  pixelRatio2:      {best_params[5]:7.4f}")
+    print(f"  ransac_weight_q:  {best_params[6]:7.2f}")
+    print(f"  ransac_weight_qg: {best_params[7]:7.2f}")
     
     print(f"\n성능:")
     print(f"  최종 CVaR: {history[-1]:.4f}")
@@ -860,9 +858,8 @@ if __name__ == "__main__":
             "edgeThresh2": float(best_params[3]),
             "simThresh2": float(best_params[4]),
             "pixelRatio2": float(best_params[5]),
-            "ransac_center_w": float(best_params[6]),
-            "ransac_length_w": float(best_params[7]),
-            "ransac_consensus_w": int(best_params[8]),
+            "ransac_weight_q": float(best_params[6]),
+            "ransac_weight_qg": float(best_params[7]),
         },
         "history": [float(x) for x in history],
         "final_cvar": float(history[-1]),
