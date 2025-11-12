@@ -1,19 +1,18 @@
 {
   "iteration": 7,
-  "acq_function": "Simplified-CVaR-KG",
-  "acq_value": 2.1612038612365723,
+  "acq_function": "BoRisk-KG",
+  "acq_value": 1.1541784749873014,
   "parameters": {
-    "edgeThresh1": -0.16879944947871905,
-    "simThresh1": 0.5417073446253784,
-    "pixelRatio1": 0.03055463830571538,
-    "edgeThresh2": 2.496342761056667,
-    "simThresh2": 0.7391180365003898,
-    "pixelRatio2": 0.11443364729323076,
-    "ransac_center_w": 0.45885658564232806,
-    "ransac_length_w": 0.008012502011561173,
-    "ransac_consensus_w": 9
+    "edgeThresh1": -0.3905766250855258,
+    "simThresh1": 0.5924427639500803,
+    "pixelRatio1": 0.1320785563069173,
+    "edgeThresh2": -7.401698847990369,
+    "simThresh2": 0.9534404735459356,
+    "pixelRatio2": 0.03148874628490572,
+    "ransac_weight_q": 15.719912119441153,
+    "ransac_weight_qg": 17.504001130054736
   },
-  "cvar": 0.33115493301392546,
-  "mean_score": 0.8816922830042344,
+  "cvar": 0.38724731978367116,
+  "mean_score": 0.49904512973260323,
   "n_w": 15
 }

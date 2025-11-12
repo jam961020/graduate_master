@@ -3,8 +3,68 @@
 
 Repository: https://github.com/jam961020/graduate_master
 
-**최종 업데이트: 2025.11.12 23:45**
-**✅ BoRisk KG 구현 완료 및 실험 진행 중**
+**최종 업데이트: 2025.11.13 02:35**
+**✅ Full BoRisk-KG 판타지 관측 활성화 완료**
+
+---
+
+## 🖥️ **실행 환경 (중요! 매번 확인)**
+
+### 작업 디렉토리
+```bash
+# Windows 절대 경로
+C:\Users\user\Desktop\study\task\graduate\graduate_master\BO_optimization
+
+# Git Bash 경로 (명령어 실행 시)
+cd /c/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
+```
+
+### 파일 구조 (BO_optimization 기준)
+```
+BO_optimization/           # 👈 항상 여기서 실행!
+├── optimization.py        # 메인 실행 파일
+├── borisk_kg.py          # BoRisk KG 획득 함수
+├── full_pipeline.py      # YOLO + AirLine 파이프라인
+├── models/
+│   └── best.pt           # YOLO 모델 (로컬)
+├── logs/                 # 실험 로그
+├── results/              # 결과 JSON
+│
+../dataset/               # 👈 상위 디렉토리!
+├── images/test/          # 119장 이미지
+└── ground_truth.json     # GT 라벨
+
+../models/                # (사용 안 함, BO_optimization/models/ 사용)
+```
+
+### 기본 실행 명령어
+```bash
+# 1. 작업 디렉토리로 이동 (필수!)
+cd /c/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
+
+# 2. Conda 환경 확인 (weld2024_mk2)
+# (보통 자동 활성화됨)
+
+# 3. 소량 테스트 (3 이미지, 2 iterations)
+python optimization.py --iterations 2 --n_initial 2 --alpha 0.3 --max_images 3 --n_w 3
+
+# 4. 전체 실험 (113 이미지, 20 iterations)
+python optimization.py --iterations 20 --n_initial 10 --alpha 0.3
+
+# 5. 결과 확인
+ls -lt results/ | head -5
+cat results/bo_cvar_*.json | tail -30
+```
+
+### 경로 관련 주의사항
+- **항상 `BO_optimization/` 디렉토리에서 실행**
+- `optimization.py`의 기본 경로:
+  - `--image_dir`: `../dataset/images/test` (상위 디렉토리)
+  - `--gt_file`: `../dataset/ground_truth.json` (상위 디렉토리)
+  - `--yolo_model`: `models/best.pt` (로컬)
+- **경로 문제 발생 시**: 위 기본값 확인
+
+---
 
 ## 📌 대전제
 

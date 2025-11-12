@@ -28,6 +28,59 @@
 
 ---
 
+### ✅ KG current_best_cvar 버그 수정 (2025.11.13 02:50)
+
+**문제**:
+- `_compute_current_best_cvar()`가 **마지막 x의 CVaR만** 계산
+- 이전 평가된 x들 완전 무시
+- **KG가 엉뚱한 지점 선택** → 개선 안 됨!
+
+**수정**:
+```python
+# Before: 마지막 것만
+last_scores = train_Y[-self.n_w:]
+current_cvar = worst_scores.mean().item()
+
+# After: 모든 x에 대해 CVaR 계산 후 최대값
+for i in range(n_groups):
+    group_scores = train_Y[i*n_w:(i+1)*n_w]
+    cvar = compute_cvar(group_scores)
+    best_cvar = max(best_cvar, cvar)  # 최대값 선택
+```
+
+**결과**:
+- ✅ 5 iterations 테스트: **+25.9% 개선!**
+- ✅ Iter 5에서 CVaR 0.4609 → 0.5023
+- ✅ KG가 드디어 개선 지점 선택!
+
+**파일**: `borisk_kg.py:44-74`
+
+---
+
+### ✅ 자동 라벨링 스크립트 완성 (2025.11.13 03:00)
+
+**목표**: AirLine으로 6개 점 자동 추출
+
+**구현**:
+- `detect_with_full_pipeline()` 사용
+- ground_truth.json과 동일한 포맷 저장
+- 유효성 검사: 최소 4개 점 검출 확인
+
+**사용법**:
+```bash
+# 전체 이미지 자동 라벨링
+python auto_labeling.py
+
+# 테스트 (10개만)
+python auto_labeling.py --max_images 10
+
+# 결과: ../dataset/ground_truth_auto.json
+```
+
+**파일**: `auto_labeling.py`
+
+---
+
 ### ✅ 평가 Metric 개선: 기울기 차이 기반 (2025.11.13 02:40)
 
 **문제 발견:**

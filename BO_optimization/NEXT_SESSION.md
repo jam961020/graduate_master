@@ -1,8 +1,8 @@
-# 🚨 긴급 세션 가이드 - 2025-11-13 (세션 2)
+# 🚨 긴급 세션 가이드 - 2025-11-13 (세션 3)
 
 **상황**: 오늘까지 실험 결과를 내지 못하면 졸업 불가
-**환경**: Windows 로컬 (리눅스 segfault로 회귀, 코드 복붙 사용 중)
-**현재 상태**: Dimension mismatch 수정 완료, **판타지 관측 버그 발견** ⚠️
+**환경**: Windows 로컬
+**현재 상태**: Full KG 활성화, Metric 개선, **치명적 버그 발견!** 🔥
 
 ---
 
@@ -126,9 +126,65 @@ Full KG failed: Tensors must have same number of dimensions: got 1 and 2
 
 ---
 
+## 🔥 **치명적 버그: 매 iteration 15개 이미지 전부 평가 중!**
+
+### 문제
+**현재 코드는 BoRisk가 아님!**
+
+```python
+# 잘못된 구현 (현재)
+매 iteration마다:
+    for w in w_set:  # 15개 환경
+        score = detect_with_full_pipeline(image_w, x, ...)  # 전부 실제 평가!
+    cvar = compute_cvar(scores)  # 직접 계산
+```
+
+**문제점**:
+- 매번 **15개 이미지 전부 실제 평가** (느림!)
+- BoRisk의 핵심인 **"효율성"** 없음
+- GP를 학습만 하고 예측은 안 씀
+
+### 올바른 BoRisk
+
+```python
+# 올바른 구현
+매 iteration마다:
+    # 1. KG로 최적 (x*, w*) 선택
+    x_star, w_star_idx = optimize_borisk(gp, w_set, bounds)
+
+    # 2. 그 1개 (x*, w*) 쌍만 실제 평가
+    image = images_data[w_star_idx]
+    score = detect_with_full_pipeline(image, x_star, ...)
+
+    # 3. GP 업데이트
+    gp.update((x_star, w_star), score)
+
+    # 4. CVaR은 GP posterior로 계산 (실제 평가 X)
+    cvar = compute_cvar_from_gp_posterior(gp, x_star, w_set)
+```
+
+**핵심**:
+- **1개 평가** vs 15개 평가 → **15배 빠름!**
+- GP로 F(x,w) 모델링 → CVaR 예측
+- 이게 BoRisk의 본질!
+
+---
+
 ## 🎯 다음 세션 우선순위
 
-### 🚨 Priority 0: Full BoRisk-KG 버그 수정 (최우선!)
+### 🚨 Priority 0: BoRisk 평가 구조 수정 (치명적!)
+
+**목표**: 매 iteration 1개 (x,w) 쌍만 평가
+
+**수정사항**:
+1. `optimize_borisk()`가 (x, w_idx) 반환하도록 수정
+2. 그 1개만 실제 평가
+3. CVaR은 GP posterior로 계산하는 함수 추가
+4. GT 없는 이미지는 GP 예측 사용
+
+---
+
+### 🟡 Priority 1: Full BoRisk-KG 버그 수정 (완료! ✅)
 
 **목표**: 판타지 관측을 사용하는 진짜 BoRisk-KG 활성화
 
