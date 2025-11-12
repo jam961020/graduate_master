@@ -1,0 +1,30 @@
+{
+  "algorithm": "BoRisk",
+  "alpha": 0.3,
+  "n_w": 3,
+  "n_images": 5,
+  "n_original": 5,
+  "n_augmented": 0,
+  "iterations": 1,
+  "n_initial": 2,
+  "best_params": {
+    "edgeThresh1": -1.6811017990112305,
+    "simThresh1": 0.5995038691163063,
+    "pixelRatio1": 0.02073334917426109,
+    "edgeThresh2": 1.9592941999435425,
+    "simThresh2": 0.5238741920143366,
+    "pixelRatio2": 0.07255916297435759,
+    "ransac_weight_q": 15.364789009094238,
+    "ransac_weight_qg": 18.42252427339554
+  },
+  "history": [
+    0.9925426683018471,
+    0.9917689396845768,
+    0.6453728728276409
+  ],
+  "final_cvar": 0.6453728728276409,
+  "initial_cvar": 0.9925426683018471,
+  "improvement": -34.977785518312004,
+  "complete_only": false,
+  "n_augment": 0
+}

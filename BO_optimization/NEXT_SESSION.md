@@ -2,11 +2,28 @@
 
 **상황**: 오늘까지 실험 결과를 내지 못하면 졸업 불가
 **환경**: Windows 로컬 (리눅스 segfault로 회귀, 코드 복붙 사용 중)
-**현재 상태**: RANSAC 버그 수정 완료, 새로운 버그 발견 (dimension mismatch)
+**현재 상태**: Dimension mismatch 버그 수정 완료, 자동 라벨링 스크립트 생성 완료
 
 ---
 
-## ✅ 완료된 작업 (2025.11.13 세션 - 현재)
+## 📅 작업 계획 (2025.11.13 ~ 2025.11.14)
+
+### 🎯 **오늘 (2025.11.13) 목표**
+
+1. ✅ **CVaR 계산 방식 수정** - BoRisk 논문 방식으로 (GP posterior 샘플링)
+2. ✅ **판타지 관측 및 획득 함수 동작 검증**
+3. ✅ **자동 라벨링 스크립트 완성** - AirLine_assemble_test.py 6개 점 활용
+4. ✅ **백그라운드 실험 결과 확인**
+5. ✅ **환경 벡터 개선** - 일관성 확보 (선 검출 실패 이미지 분석)
+
+### 🎯 **내일 (2025.11.14) 목표**
+
+1. ✅ **CLIP 적용** - Zero-shot / fine-tuning으로 직관적 환경 인식
+2. ✅ **학회/저널 준비** - BoRisk 수정 가미
+
+---
+
+## ✅ 완료된 작업 (2025.11.13 세션)
 
 ### 1. 파이프라인 아키텍처 문서화 완료 ✓
 - **PIPELINE_SUMMARY.md** 생성: 전체 파이프라인 구조 명확화
@@ -41,12 +58,17 @@
 - **기능**: AirLine_assemble_test.py 사용해 6개 점 자동 추출
 - **출력**: ground_truth_auto.json (GT 포맷과 동일)
 - **사용법**: `python auto_labeling.py --image_dir ../dataset/images/test --output ../dataset/ground_truth_auto.json`
+- **현재 상태**: Upper 점 계산 로직 임시 구현됨 → **수정 필요**: AirLine_assemble_test는 6개 점을 모두 제공하므로 직접 사용
+
+### 5. Git Push 완료 ✓
+- **커밋**: `4b0d73a` - "FIX: Dimension mismatch 버그 수정 + 자동 라벨링 스크립트 추가"
+- **변경 파일**: borisk_kg.py, auto_labeling.py, NEXT_SESSION.md
 
 ---
 
-## 🎯 다음 세션 우선순위 (2025.11.13)
+## 🎯 현재 세션 작업 (우선순위)
 
-### 🚨 Priority 0: CVaR 계산 방식 수정 (중요!)
+### 🚨 Priority 0: CVaR 계산 방식 수정 (최우선!)
 
 **현재 문제**:
 현재 코드는 **실제 이미지를 평가**해서 CVaR을 계산하고 있음 (`evaluate_on_w_set` → `detect_with_full_pipeline`)
@@ -55,355 +77,283 @@
 - 초기 평가로 GP 모델 학습
 - 이후 **GP posterior 샘플링**으로 CVaR 추정
 - 실제 평가는 최종 후보만 진행
+- **핵심**: 판타지 관측을 통해 미래 성능 예측
 
 **참고 자료**:
 - https://github.com/saitcakmak/BoRisk
 - BoRisk 논문: "Bayesian Optimization under Risk" (2020)
+- BoTorch qMultiFidelityKnowledgeGradient 구현
 
 **수정 필요 부분**:
 1. `optimization.py`의 `evaluate_on_w_set()` 함수
+   - 현재: 실제 이미지 평가
+   - 변경: GP posterior 샘플링
 2. GP posterior에서 샘플링하는 함수 추가
 3. CVaR을 GP로 추정하도록 수정
+4. 판타지 관측 구조 검증
 
-**주의사항**:
-- **다음 세션에서 바로 작업 시작하지 말 것!**
-- 사용자와 논의 후 진행
+**작업 단계**:
+```python
+# 1. GP posterior 샘플링 함수 추가
+def sample_from_gp_posterior(gp, x, w_set, n_samples=100):
+    """GP posterior에서 샘플링하여 CVaR 추정"""
+    # (x, w) 쌍 생성
+    # GP.posterior() 사용
+    # rsample()로 샘플링
+    # CVaR 계산
 
----
-
-### 🎯 Priority 1: 자동 라벨링 스크립트 테스트
-
-**목표**: auto_labeling.py 테스트 및 보완
-
-**테스트 명령어**:
-```bash
-# 소량 테스트
-python auto_labeling.py --image_dir ../dataset/images/test --output test_auto_gt.json
-
-# 결과 확인
-cat test_auto_gt.json | head -20
+# 2. evaluate_on_w_set 수정
+# 실제 평가 대신 GP 샘플링 사용 (초기 평가 후)
 ```
 
-**예상 이슈**:
-- [ ] Upper 점 계산 로직 미완성 (현재 임시값)
-- [ ] 선 연장 로직 추가 필요
-- [ ] 에러 처리 강화 필요
+---
+
+### 🎯 Priority 1: 판타지 관측 및 획득 함수 동작 검증
+
+**목표**: 현재 SimplifiedBoRiskKG가 제대로 작동하는지 확인
+
+**검증 항목**:
+1. ✅ **판타지 샘플 생성**: `posterior.rsample()` 동작 확인
+2. ✅ **CVaR 계산**: worst α% 선택이 올바른가
+3. ✅ **개선도 계산**: `max(0, fantasy_cvar - current_best_cvar)` 로직 확인
+4. ✅ **획득 함수 최적화**: 후보 선택이 합리적인가
+
+**테스트 방법**:
+```bash
+# 작은 데이터셋으로 디버깅
+python optimization.py --iterations 3 --n_initial 2 --alpha 0.3 --max_images 5 --n_w 3 --debug
+```
+
+**로깅 추가**:
+```python
+# borisk_kg.py에 로깅 추가
+print(f"Fantasy CVaR: {fantasy_cvar:.4f}, Current: {self.current_best_cvar:.4f}, Improvement: {improvement:.4f}")
+```
 
 ---
 
-### 🎯 Priority 2: 전체 데이터셋 실험
+### 🎯 Priority 2: 자동 라벨링 스크립트 수정
 
-**목표**: alpha=0.1 전체 실험 실행
+**현재 문제**:
+- `auto_labeling.py`에서 Upper 점 계산이 임시 구현됨
+- AirLine_assemble_test.py는 6개 점을 모두 제공함 (longi 4개 + collar 2개)
+
+**수정 방향**:
+1. AirLine_assemble_test.py의 `run_airline_test()` 함수 직접 사용
+2. 반환되는 6개 점을 그대로 사용
+3. 특정할 수 없는 경우 휴리스틱 방법 사용 (사용자가 수정 예정)
+
+**구현**:
+```python
+# auto_labeling.py 수정
+from AirLine_assemble_test import run_airline_test
+
+def auto_label_image(image_path):
+    # AirLine_assemble_test 실행
+    result = run_airline_test(image_path)
+
+    if result and len(result) == 6:
+        # 6개 점 모두 반환됨
+        longi_left_lower, longi_right_lower, longi_left_upper, longi_right_upper, collar_left_lower, collar_left_upper = result
+        return format_coordinates(result)
+    else:
+        # 휴리스틱 방법 (사용자 수정 예정)
+        return None
+```
+
+**테스트**:
+```bash
+# 소량 테스트
+python auto_labeling.py --image_dir ../dataset/images/test --output test_auto_gt.json --max_images 10
+
+# 결과 확인
+cat test_auto_gt.json | head -30
+```
+
+---
+
+### 🎯 Priority 3: 백그라운드 실험 결과 확인
+
+**현재 실행 중인 실험들**:
+- 9개 background bash 프로세스
+- 테스트 실험들 (max_images=3, 5)
+- alpha=0.1 실험 (iterations=15)
+
+**작업**:
+1. 각 프로세스 상태 확인
+2. 완료된 실험 결과 분석
+3. 실패한 실험 원인 파악
 
 **명령어**:
 ```bash
-# 전체 데이터셋 (113장)
-python optimization.py --alpha 0.1 --iterations 15 --n_initial 5 --n_w 15 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
+# 프로세스 확인
+BashOutput tool로 각 bash_id 확인
 
-# 결과 분석
-ls -lt results/ | head -5
+# 결과 파일 확인
+ls -lt results/ | head -10
 cat results/bo_cvar_*.json | tail -1
 ```
 
 ---
 
-## ✅ 완료된 작업 (2025.11.12 세션)
+### 🎯 Priority 4: 환경 벡터 개선 - 일관성 확보
 
-### 1. Repository Clone 및 경로 수정 완료 ✓
-- 위치: `C:\Users\user\Desktop\study\task\graduate\graduate_master`
-- `test_clone_final.py` 모든 하드코딩 경로 수정
-- Windows 경로 → `__file__` 기준 절대 경로로 변경
+**목표**: 선 검출이 잘 안되는 이미지들에서 일관적인 환경 파라미터 생성
 
-### 2. BoRisk KG 구현 완료 ✓
-- `borisk_kg.py` 추가: CVaR-KG 획득 함수
-- `optimization.py` 수정: borisk_kg 통합
-- `Simplified-CVaR-KG` 성공적으로 작동
-- qMFKG 문제 해결
+**현재 문제**:
+- CVaR 값이 일관성이 없음
+- 도출된 파라미터를 적용한 결과가 좋지 못한 경우가 많음
+- 실패 케이스를 제대로 구분하지 못함
 
-### 3. RANSAC 버그 수정 ✓
-- `full_pipeline.py`: 1개 선만 검출된 경우 처리 로직 추가
-- weighted_ransac_line 안정화
+**작업 단계**:
 
-### 4. 실험 분석 완료 ✓
-- GP noise level 의미 파악 (0.74 = 높음)
-- CVaR vs Mean 차이 분석 (alpha=0.3: 71.7% vs 91.8%)
-- alpha 조정 필요성 확인 → alpha=0.1로 실험 시작
+#### 1. 실패 이미지 분석
+```python
+# failure_analysis.py 작성
+def analyze_failed_images(results_json):
+    """
+    실패 케이스 분석
+    - score < 0.5인 이미지 추출
+    - 환경 파라미터 확인
+    - 공통 패턴 찾기
+    """
+    failed_images = [img for img in results if img['score'] < 0.5]
+
+    # 환경 파라미터 분포 확인
+    env_params = [extract_environment(img_path) for img_path in failed_images]
+
+    # 클러스터링
+    from sklearn.cluster import KMeans
+    clusters = KMeans(n_clusters=3).fit(env_params)
+
+    return failed_images, env_params, clusters
+```
+
+#### 2. 환경 벡터 개선
+**현재 6D 환경 벡터**:
+- brightness, contrast, edge_density, texture_complexity, blur_level, noise_level
+
+**추가 고려사항**:
+- 선 검출에 큰 장애가 되는 요소 파악
+- 실패 케이스에서 일관된 환경 파라미터 도출
+
+**개선 방향**:
+```python
+# environment_improved.py
+def extract_environment_improved(image):
+    """
+    개선된 환경 벡터 추출
+    - 기존 6D 유지
+    - 추가: 선 검출 난이도 관련 특징
+      - 용접선 명확도
+      - 배경 복잡도
+      - 조명 균일도
+    """
+    base_env = extract_environment(image)  # 기존 6D
+
+    # 추가 특징
+    weld_line_clarity = compute_weld_line_clarity(image)
+    background_complexity = compute_background_complexity(image)
+    lighting_uniformity = compute_lighting_uniformity(image)
+
+    return np.concatenate([base_env, [weld_line_clarity, background_complexity, lighting_uniformity]])
+```
+
+#### 3. 일관성 테스트
+```bash
+# 실패 이미지들에 대해 환경 파라미터 추출
+python failure_analysis.py --results results/bo_cvar_*.json --output failure_report.json
+
+# 클러스터링 결과 시각화
+python visualize_clusters.py --input failure_report.json
+```
 
 ---
 
-## 🎯 다음 세션 작업 (우선순위)
+## 📅 내일 작업 계획 (2025.11.14)
 
-### ✅ 현재 진행 중
-- **실험 실행 중**: alpha=0.1, iterations=15, n_w=15, 전체 데이터셋
-- **예상 완료**: 30분~1시간
-- **결과 파일**: `results/bo_cvar_*.json`
+### 🎯 Priority 1: CLIP 적용
 
-### Priority 1: 실험 결과 분석 (최우선!)
+**목표**: Zero-shot 또는 fine-tuning으로 직관적인 환경 인식
 
-**목표**: alpha=0.1 실험 결과 분석 및 추가 실험 계획
+**작업 단계**:
 
-**작업**:
-1. 실험 결과 확인
-   ```bash
-   # 결과 파일 확인
-   ls -lt results/ | head -5
+#### 1. CLIP 모델 설치
+```bash
+pip install transformers torch torchvision
+pip install openai-clip
+```
 
-   # 최신 결과 보기
-   cat results/bo_cvar_*.json | tail -1
-   ```
+#### 2. Zero-shot 환경 분류
+```python
+# clip_environment.py
+import torch
+import clip
+from PIL import Image
 
-2. CVaR 개선도 분석
-   - 초기 CVaR vs 최종 CVaR
-   - alpha=0.1이 극단값에 집중했는가?
-   - 49%, 66% 같은 실패 케이스가 개선되었는가?
+def classify_environment_with_clip(image_path):
+    """
+    CLIP을 사용한 환경 분류
+    """
+    model, preprocess = clip.load("ViT-B/32", device="cuda")
 
-3. 추가 실험 결정
-   - alpha=0.15, 0.2도 실험할지 결정
-   - n_w 조정 필요성 판단
+    # 환경 카테고리 정의
+    categories = [
+        "clear welding line with good contrast",
+        "blurry welding line with low contrast",
+        "welding line with bright reflection",
+        "welding line with complex background",
+        "dark welding line with shadows"
+    ]
 
-### Priority 2: 시각화 및 결과 정리 (High)
+    # 이미지 로드
+    image = preprocess(Image.open(image_path)).unsqueeze(0).to("cuda")
+    text = clip.tokenize(categories).to("cuda")
 
-**목표**: 논문용 Figure 및 분석 자료 생성
+    # 유사도 계산
+    with torch.no_grad():
+        image_features = model.encode_image(image)
+        text_features = model.encode_text(text)
 
-**작업**:
-1. **visualization.py 작성**
-   - CVaR 개선 추이 그래프
-   - alpha별 성능 비교 (0.1 vs 0.3)
+        similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+
+    return similarity[0].cpu().numpy()
+```
+
+#### 3. Fine-tuning (선택사항)
+```python
+# fine_tune_clip.py
+# 실패/성공 케이스로 CLIP fine-tuning
+# 목표: 선 검출 난이도 직접 예측
+```
+
+---
+
+### 🎯 Priority 2: 학회/저널 준비
+
+**목표**: BoRisk에 수정을 가미하여 학회/저널 제출 준비
+
+**작업 항목**:
+1. **알고리즘 개선**
+   - BoRisk + 환경 인식 (CLIP)
+   - 제안: "Environment-Aware Risk-Averse Bayesian Optimization"
+
+2. **실험 결과 정리**
+   - 다양한 alpha 실험 결과
+   - CVaR 개선도 분석
    - 실패 케이스 분석
 
-2. **결과 요약 문서**
-   - 핵심 발견사항 정리
-   - 논문용 Table 생성
+3. **Figure 생성**
+   - 최적화 과정 시각화
+   - alpha별 성능 비교
+   - 환경별 성능 분포
 
-### Priority 3: 추가 실험 (Medium)
-
-**다음 실험 후보**:
-```bash
-# alpha=0.15 (중간값)
-python optimization.py --alpha 0.15 --iterations 15 --n_initial 5 --n_w 15 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
-
-# alpha=0.2 (비교용)
-python optimization.py --alpha 0.2 --iterations 15 --n_initial 5 --n_w 15 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
-```
-
-### Priority 4: 자동 라벨링 시스템 구축 (이전 우선순위)
-
-**목표**: AirLine_assemble_test.py 결과로 GT 자동 생성
-
-#### 작업 단계:
-1. **자동 라벨링 스크립트 작성**
-   ```python
-   # auto_labeling.py 생성
-   # AirLine_assemble_test.py 사용하여 6개 점 추출
-   # ground_truth.json 포맷으로 저장
-   ```
-
-2. **출력 포맷**
-   ```json
-   {
-     "image_name": {
-       "coordinates": {
-         "longi_left_lower_x": 0, "longi_left_lower_y": 0,
-         "longi_right_lower_x": 0, "longi_right_lower_y": 0,
-         "longi_left_upper_x": 0, "longi_left_upper_y": 0,
-         "longi_right_upper_x": 0, "longi_right_upper_y": 0,
-         "collar_left_lower_x": 0, "collar_left_lower_y": 0,
-         "collar_left_upper_x": 0, "collar_left_upper_y": 0
-       }
-     }
-   }
-   ```
-
-3. **labeling_tool.py 연동**
-   - 자동 생성된 GT를 수동으로 수정 가능하게
-   - 기존 labeling_tool.py에 불러오기 기능 추가
-
-#### 구현 위치:
-```
-BO_optimization/
-├── auto_labeling.py          # 새로 생성
-├── labeling_tool.py           # 기존 파일 수정
-└── dataset/
-    ├── ground_truth.json      # 기존
-    └── ground_truth_auto.json # 자동 생성
-```
-
----
-
-### Priority 2: 환경 변수 조정 실험
-
-**현재 문제**: 환경 벡터가 최적화에 제대로 반영되는가?
-
-#### 실험 계획:
-1. **환경 샘플링 방식 변경**
-   - 현재: 랜덤 샘플링
-   - 개선: Diverse sampling (k-means clustering)
-
-2. **n_w 값 조정**
-   ```bash
-   # 현재: n_w=15
-   python optimization.py --n_w 10 --iterations 10
-   python optimization.py --n_w 20 --iterations 10
-   python optimization.py --n_w 30 --iterations 10
-   ```
-
-3. **alpha 값 실험**
-   ```bash
-   # 현재: alpha=0.3 (worst 30%)
-   python optimization.py --alpha 0.2  # worst 20%
-   python optimization.py --alpha 0.4  # worst 40%
-   python optimization.py --alpha 0.5  # worst 50%
-   ```
-
----
-
-### Priority 3: RANSAC 가중치 수정
-
-**문제 발견**: Claude가 RANSAC 가중치를 잘못 이해한 듯
-
-#### 현재 구현 (optimization.py:332-340):
-```python
-w_center = float(params.get('ransac_center_w', 0.5))
-w_length = float(params.get('ransac_length_w', 0.5))
-w_consensus = int(params.get('ransac_consensus_w', 5))
-```
-
-#### 수정 필요 사항:
-1. **가중치 범위 재검토**
-   - `ransac_center_w`: [0.0, 1.0] → 적절한가?
-   - `ransac_length_w`: [0.0, 1.0] → 적절한가?
-   - `ransac_consensus_w`: [1, 10] → 적절한가?
-
-2. **가중치 정규화**
-   - center + length = 1.0 제약 필요한가?
-   - consensus는 곱셈 가중치로 사용
-
-3. **실험**
-   ```bash
-   # 극단적인 값으로 테스트
-   # center 중시
-   python optimization.py --iterations 5 --n_initial 3
-
-   # length 중시
-   python optimization.py --iterations 5 --n_initial 3
-   ```
-
----
-
-### Priority 4: 시각화 - 초기/중간/최종 선 검출 결과
-
-**목표**: 최적화 과정 시각화로 논문 Figure 생성
-
-#### 필요한 시각화:
-1. **초기 (iteration 0)**
-   - 검출된 선
-   - GT 선
-   - 평가 점수
-
-2. **중간 (iteration 10)**
-   - 검출된 선
-   - GT 선
-   - 평가 점수
-   - 개선 추이
-
-3. **최종 (best iteration)**
-   - 검출된 선
-   - GT 선
-   - 평가 점수
-   - 최종 개선율
-
-#### 구현:
-```python
-# visualization.py 생성
-def save_detection_comparison(iteration, params, detected, gt, score):
-    # 3개 subplot: 초기 / 중간 / 최종
-    # 선 검출 결과 오버레이
-    # 점수 표시
-```
-
----
-
-## 🔍 분석 포인트 (중요!)
-
-### 1. 메트릭 재검토 필요
-
-**의문**: 현재 메트릭이 실패 상황을 제대로 반영하는가?
-
-#### 현재 메트릭 (line_equation_evaluation):
-- 방향 유사도 (60%)
-- 평행 거리 (40%)
-
-#### 검토 사항:
-- 선이 아예 검출 안 되면? → 0점 처리 맞나?
-- 방향은 맞는데 위치가 크게 틀리면? → 거리 패널티 충분한가?
-- GT가 없는 경우는? → 현재 skip
-
-#### 실험:
-```python
-# 다양한 실패 케이스로 메트릭 테스트
-test_cases = [
-    ("완전 실패", detected=None, expected_score=0.0),
-    ("방향만 맞음", detected=parallel_but_far, expected_score=?),
-    ("위치만 맞음", detected=nearby_but_perpendicular, expected_score=?),
-]
-```
-
----
-
-### 2. CVaR vs 평균 분석
-
-**관찰**: 평균이 CVaR을 그대로 추종한다
-
-#### 가설:
-1. **데이터셋이 균질적이다**
-   - 환경 변화가 크지 않음
-   - 모든 이미지가 비슷한 난이도
-
-2. **alpha가 너무 크다** (0.3)
-   - worst 30% → 샘플이 많아서 평균과 비슷
-   - alpha를 줄여서 극단치만 보면 차이가 날 수도
-
-3. **메트릭 문제**
-   - 실패 케이스를 제대로 구분 못함
-   - 모든 이미지가 비슷한 점수대
-
-#### 실험:
-```bash
-# alpha 조정 실험
-python optimization.py --alpha 0.1 --iterations 10  # worst 10%
-python optimization.py --alpha 0.5 --iterations 10  # worst 50%
-
-# 결과 비교
-# - CVaR vs Mean 차이 분석
-# - 히스토그램 그려보기
-```
-
----
-
-### 3. GP 샘플링 vs 실제 평가
-
-**BoRisk 핵심**: 실제 데이터를 쓰는 게 아니라 GP 샘플링 사용
-
-#### 현재 구현:
-- w_set 샘플링: 실제 이미지 인덱스 사용
-- 평가: 실제 이미지로 평가
-
-#### BoRisk 이론:
-- w_set 샘플링: 환경 벡터만 샘플링
-- 평가: **GP posterior에서 샘플링** (실제 평가 아님!)
-- 장점: 실제로 없는 환경도 테스트 가능
-
-#### 수정 필요 여부 검토:
-```python
-# 현재 (optimization.py:283-327)
-def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
-    # 실제 이미지 평가
-    for idx in w_indices:
-        img_data = images_data[idx]
-        score = detect_and_evaluate(img_data)
-```
-
-**질문**: 이게 맞나? BoRisk 논문 다시 확인 필요
+4. **논문 초안 작성**
+   - Abstract
+   - Introduction
+   - Method
+   - Experiments
+   - Conclusion
 
 ---
 
@@ -428,22 +378,6 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
 - Windows 환경: 별도 코드 복붙
 - 걱정: 브랜치 분리하면 경로 충돌 가능
 
-**제안**:
-```bash
-# Windows 브랜치 생성
-git checkout -b windows-local
-
-# Linux 수정사항 선택적으로 merge
-git cherry-pick <경로 수정 커밋들>
-
-# 또는 이번 세션 md만 업데이트
-git checkout main
-# NEXT_SESSION.md, Claude.md만 수정
-git add *.md
-git commit -m "docs: Update session guide with urgent tasks"
-git push origin main
-```
-
 ---
 
 ## 🚀 빠른 시작 명령어
@@ -457,94 +391,76 @@ conda activate weld2024_mk2
 cd C:/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
 ```
 
-### 1. 자동 라벨링 (최우선)
+### 1. CVaR 계산 방식 테스트
 ```bash
-# 아직 없음 - 이번 세션에서 작성 필요
-python auto_labeling.py --image_dir dataset/images/test --output dataset/ground_truth_auto.json
+# GP posterior 샘플링 테스트
+python test_gp_sampling.py --max_images 5
 ```
 
-### 2. 빠른 실험
+### 2. 자동 라벨링
 ```bash
-# 환경 변수 실험
-python optimization.py --n_w 20 --alpha 0.2 --iterations 5 --n_initial 3
+# 소량 테스트
+python auto_labeling.py --image_dir ../dataset/images/test --output test_auto_gt.json --max_images 10
 
-# RANSAC 가중치 실험
-python optimization.py --iterations 5 --n_initial 3
+# 전체 실행
+python auto_labeling.py --image_dir ../dataset/images/test --output ../dataset/ground_truth_auto.json
 ```
 
-### 3. 전체 실험
+### 3. 실패 이미지 분석
+```bash
+# 실패 케이스 분석
+python failure_analysis.py --results results/bo_cvar_*.json --output failure_report.json
+
+# 시각화
+python visualize_clusters.py --input failure_report.json
+```
+
+### 4. 전체 실험
 ```bash
 # 최종 실험
 python optimization.py --iterations 20 --n_initial 10 --alpha 0.3
-```
-
-### 4. 시각화
-```bash
-# 아직 없음 - 이번 세션에서 작성 필요
-python visualization.py --results results/bo_cvar_*.json
 ```
 
 ---
 
 ## 📊 성공 기준
 
-### 오늘 달성해야 할 것:
-1. ✅ 자동 라벨링 시스템 완성
-2. ✅ 다양한 alpha/n_w 조합 실험 (최소 5개)
-3. ✅ 시각화 Figure 생성 (초기/중간/최종)
-4. ✅ 메트릭 분석 및 문제점 파악
-5. ✅ CVaR vs Mean 분석 결과
+### 오늘 (2025.11.13) 달성 목표:
+1. ✅ CVaR 계산 방식 수정 완료
+2. ✅ 판타지 관측 동작 검증 완료
+3. ✅ 자동 라벨링 스크립트 완성
+4. ✅ 백그라운드 실험 결과 확인
+5. ✅ 환경 벡터 개선 (실패 이미지 일관성 확보)
 
-### 논문용 Figure:
-- Figure 1: 최적화 과정 (초기 → 중간 → 최종)
-- Figure 2: CVaR 개선 추이 그래프
-- Figure 3: alpha별 성능 비교
-- Figure 4: 환경별 성능 분석
-
----
-
-## 💡 AirLine 저자들은 바보인 듯
-
-**관찰된 문제점**:
-1. Windows 경로 하드코딩
-2. 상대 경로 가정 (재현성 낮음)
-3. 문서화 부족
-4. 의존성 관리 엉망
-
-**우리의 개선**:
-1. ✅ __file__ 기준 절대 경로
-2. ✅ 환경 독립적인 코드
-3. ✅ 상세한 문서화 (이 파일!)
-4. 🔄 conda 환경 명세 (TODO)
+### 내일 (2025.11.14) 달성 목표:
+1. ✅ CLIP 적용 및 Zero-shot 환경 분류
+2. ✅ 학회/저널 논문 초안 작성
+3. ✅ 실험 결과 정리 및 Figure 생성
 
 ---
 
-## 📝 다음 세션 TODO
+## 💡 중요 메모
 
-### 즉시 시작:
-- [ ] auto_labeling.py 작성
-- [ ] labeling_tool.py 수정
-- [ ] visualization.py 작성
+### BoRisk 핵심 이해
+**현재 구현의 문제**:
+- 매 iteration마다 실제 이미지 평가 (느림, 비효율적)
+- w_set의 모든 이미지를 평가 (113개 전체 평가)
 
-### 실험:
-- [ ] alpha [0.1, 0.2, 0.3, 0.4, 0.5] 실험
-- [ ] n_w [10, 15, 20, 30] 실험
-- [ ] 메트릭 테스트 케이스 작성
+**BoRisk 올바른 구현**:
+- 초기 평가로 GP 학습
+- 이후 **GP posterior 샘플링**으로 CVaR 추정
+- 실제 평가는 선택된 후보만 진행 (매 iteration 1개)
+- 속도: 현재의 1/10로 단축 가능
 
-### 분석:
-- [ ] CVaR vs Mean 히스토그램
-- [ ] 환경별 성능 분포
-- [ ] 실패 케이스 분석
-
-### 문서:
-- [ ] 실험 결과 정리
-- [ ] Figure 생성
-- [ ] 논문 초안 작성
+### AirLine_assemble_test.py 활용
+- 6개 점을 모두 제공하므로 Upper 점 계산 로직 불필요
+- 직접 사용 가능
+- 특정 불가 케이스는 휴리스틱 (사용자 수정 예정)
 
 ---
 
-**마지막 업데이트**: 2025-11-12 23:45
-**다음 세션**: 실험 결과 분석 및 시각화!
-**Status**: ✅ BoRisk KG 구현 완료, 실험 진행 중
+**마지막 업데이트**: 2025-11-13 01:55
+**다음 작업**: CVaR 계산 방식 수정 + 자동 라벨링 + 환경 벡터 개선
+**Status**: ✅ Dimension mismatch 수정 완료, 작업 시작 준비됨
 
 **화이팅! 졸업하자! 🎓**

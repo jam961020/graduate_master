@@ -4,7 +4,10 @@
       "Bash(python optimization.py:*)",
       "Bash(/c/Users/user/anaconda3/Scripts/activate.bat weld2024_mk2)",
       "Bash(readlink:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

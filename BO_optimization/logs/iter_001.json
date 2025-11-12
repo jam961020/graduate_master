@@ -1,19 +1,18 @@
 {
   "iteration": 1,
   "acq_function": "Simplified-CVaR-KG",
-  "acq_value": 2.060033082962036,
+  "acq_value": 2.0690207481384277,
   "parameters": {
-    "edgeThresh1": -22.892176461245015,
-    "simThresh1": 0.9505028904020689,
-    "pixelRatio1": 0.06491035479046856,
-    "edgeThresh2": -7.563714820210372,
-    "simThresh2": 0.5894958639728505,
-    "pixelRatio2": 0.07894796908973395,
-    "ransac_center_w": 0.3297643277406371,
-    "ransac_length_w": 0.46183140362157055,
-    "ransac_consensus_w": 5
+    "edgeThresh1": -8.95154370191527,
+    "simThresh1": 0.6818147712277449,
+    "pixelRatio1": 0.028624817725365112,
+    "edgeThresh2": -10.132200008485293,
+    "simThresh2": 0.6456947151192164,
+    "pixelRatio2": 0.07150423146384635,
+    "ransac_weight_q": 6.708670193096158,
+    "ransac_weight_qg": 3.7942116931402836
   },
-  "cvar": 0.3326065241031291,
-  "mean_score": 0.8555249008616804,
-  "n_w": 15
+  "cvar": 0.6453728728276409,
+  "mean_score": 0.8760607723523819,
+  "n_w": 3
 }
