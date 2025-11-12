@@ -272,7 +272,8 @@ def optimize_borisk(gp, w_set, bounds, alpha=0.3, use_full_kg=False):
             
             # 후보 생성 및 평가
             n_candidates = 256
-            candidates = torch.rand(n_candidates, 9, dtype=bounds.dtype, device=bounds.device)
+            param_dim = bounds.shape[1]  # bounds의 dimension을 동적으로 가져옴
+            candidates = torch.rand(n_candidates, param_dim, dtype=bounds.dtype, device=bounds.device)
             candidates = bounds[0] + (bounds[1] - bounds[0]) * candidates
             
             acq_values = simple_kg.compute_acquisition_value(candidates, bounds)
@@ -286,7 +287,8 @@ def optimize_borisk(gp, w_set, bounds, alpha=0.3, use_full_kg=False):
         except Exception as e:
             print(f"Simplified KG failed: {e}")
             # 최후의 폴백
-            x = torch.rand(1, 9, dtype=bounds.dtype, device=bounds.device)
+            param_dim = bounds.shape[1]  # bounds의 dimension을 동적으로 가져옴
+            x = torch.rand(1, param_dim, dtype=bounds.dtype, device=bounds.device)
             x = bounds[0] + (bounds[1] - bounds[0]) * x
             return x, 0.0, "Random-fallback"
 

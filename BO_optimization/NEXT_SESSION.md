@@ -28,54 +28,81 @@
 - **이전 실패 케이스**: alpha=0.1 실험 2건 모두 이 버그로 실패
 - **현재 상태**: RANSAC 버그 완전 해결!
 
-### 3. 새로운 버그 발견 (Dimension Mismatch)
-- **문제**: borisk_kg.py에서 tensor dimension 불일치
-  - Error: "The size of tensor a (8) must match the size of tensor b (9)"
-  - Location: Line 276, 290 in `optimize_borisk()`
-  - Cause: Parameter bounds dimension mismatch (8D vs 9D)
-- **영향**: RANSAC 버그 수정 후에도 실험 진행 불가
-- **근본 원인**: RANSAC 파라미터 3D가 bounds에 올바르게 반영되지 않음
-- **우선순위**: 🚨 High - 이것 수정해야 실험 가능!
-- **디버깅 필요**: `optimization.py`와 `borisk_kg.py` 파라미터 dimension 확인
+### 3. Dimension Mismatch 버그 수정 완료 ✓
+- **문제**: borisk_kg.py에서 하드코딩된 `9`가 bounds 8D와 불일치
+  - Line 275: `torch.rand(n_candidates, 9, ...)` ← 하드코딩
+  - Line 289: `torch.rand(1, 9, ...)` ← 하드코딩
+- **수정**: `bounds.shape[1]`로 동적 처리 (Line 275, 290)
+- **테스트**: 5개 이미지로 실험 성공 ✅
+- **결과**: Dimension 에러 없음, 실험 정상 실행됨
+
+### 4. 자동 라벨링 스크립트 작성 완료 ✓
+- **파일**: `auto_labeling.py`
+- **기능**: AirLine_assemble_test.py 사용해 6개 점 자동 추출
+- **출력**: ground_truth_auto.json (GT 포맷과 동일)
+- **사용법**: `python auto_labeling.py --image_dir ../dataset/images/test --output ../dataset/ground_truth_auto.json`
 
 ---
 
 ## 🎯 다음 세션 우선순위 (2025.11.13)
 
-### 🚨 Priority 0: Dimension Mismatch 버그 수정 (긴급!)
+### 🚨 Priority 0: CVaR 계산 방식 수정 (중요!)
 
-**목표**: 실험이 실행 가능하도록 파라미터 dimension 버그 해결
+**현재 문제**:
+현재 코드는 **실제 이미지를 평가**해서 CVaR을 계산하고 있음 (`evaluate_on_w_set` → `detect_with_full_pipeline`)
 
-**문제 분석**:
-1. Test 출력에서 확인된 상황:
-   - `train_X_full shape: torch.Size([6, 14])` → 14D인데 15D여야 함!
-   - Expected: 9D params + 6D env = 15D
-   - Actual: 14D (1개 파라미터 누락)
+**BoRisk 논문 방식**:
+- 초기 평가로 GP 모델 학습
+- 이후 **GP posterior 샘플링**으로 CVaR 추정
+- 실제 평가는 최종 후보만 진행
 
-2. 에러 발생 위치:
-   ```python
-   # borisk_kg.py:276
-   candidates = bounds[0] + (bounds[1] - bounds[0]) * candidates
-   # bounds는 8D, candidates는 9D
-   ```
+**참고 자료**:
+- https://github.com/saitcakmak/BoRisk
+- BoRisk 논문: "Bayesian Optimization under Risk" (2020)
 
-**디버깅 체크리스트**:
-- [ ] `optimization.py` BOUNDS 확인 (9D params 모두 있나?)
-- [ ] `optimize_borisk()`에 전달되는 bounds dimension 확인
-- [ ] RANSAC 3개 파라미터가 모두 포함되어 있나?
-- [ ] Environment 벡터 6D가 올바르게 concat되나?
+**수정 필요 부분**:
+1. `optimization.py`의 `evaluate_on_w_set()` 함수
+2. GP posterior에서 샘플링하는 함수 추가
+3. CVaR을 GP로 추정하도록 수정
 
-**예상 원인**:
-- RANSAC 파라미터 중 하나가 BOUNDS에 누락되었을 가능성
-- 또는 borisk_kg.py가 환경 벡터를 고려하지 않고 파라미터만 최적화하는 구조
+**주의사항**:
+- **다음 세션에서 바로 작업 시작하지 말 것!**
+- 사용자와 논의 후 진행
 
-**수정 후 테스트**:
+---
+
+### 🎯 Priority 1: 자동 라벨링 스크립트 테스트
+
+**목표**: auto_labeling.py 테스트 및 보완
+
+**테스트 명령어**:
 ```bash
-# 빠른 테스트
-python optimization.py --iterations 1 --n_initial 2 --alpha 0.3 --max_images 5 --n_w 3 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
+# 소량 테스트
+python auto_labeling.py --image_dir ../dataset/images/test --output test_auto_gt.json
 
-# 성공하면 전체 실험
+# 결과 확인
+cat test_auto_gt.json | head -20
+```
+
+**예상 이슈**:
+- [ ] Upper 점 계산 로직 미완성 (현재 임시값)
+- [ ] 선 연장 로직 추가 필요
+- [ ] 에러 처리 강화 필요
+
+---
+
+### 🎯 Priority 2: 전체 데이터셋 실험
+
+**목표**: alpha=0.1 전체 실험 실행
+
+**명령어**:
+```bash
+# 전체 데이터셋 (113장)
 python optimization.py --alpha 0.1 --iterations 15 --n_initial 5 --n_w 15 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
+
+# 결과 분석
+ls -lt results/ | head -5
+cat results/bo_cvar_*.json | tail -1
 ```
 
 ---
