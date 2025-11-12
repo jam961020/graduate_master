@@ -73,40 +73,39 @@ class BoRiskAcquisition:
 
         return best_cvar
     
-    def compute_kg_value(self, x_candidate):
+    def compute_kg_value_for_single_w(self, x_candidate, w_idx):
         """
-        Knowledge Gradient 계산
+        단일 (x, w) 쌍에 대한 Knowledge Gradient 계산
+
+        BoRisk의 핵심: 각 (x, w) 쌍을 개별적으로 평가!
 
         Args:
-            x_candidate: [1, 9] 파라미터 후보
+            x_candidate: [9] 파라미터 후보
+            w_idx: 환경 인덱스
 
         Returns:
             kg_value: KG 값 (Expected CVaR Improvement)
         """
-        x_candidate = x_candidate.squeeze(0) if x_candidate.dim() > 1 else x_candidate
+        x_candidate = x_candidate.squeeze() if x_candidate.dim() > 1 else x_candidate
 
-        # 1. (x, w) 쌍 생성
-        x_expanded = x_candidate.unsqueeze(0).expand(self.n_w, -1)  # [n_w, 9]
-        xw_pairs = torch.cat([x_expanded, self.w_set], dim=-1)      # [n_w, 15]
+        # 1. 단일 (x, w) 쌍 생성
+        w = self.w_set[w_idx]  # [6]
+        xw_pair = torch.cat([x_candidate, w]).unsqueeze(0)  # [1, 15]
 
-        # 2. 현재 GP의 posterior
+        # 2. 현재 GP의 posterior (단일 점)
         with torch.no_grad():
-            posterior = self.gp.posterior(xw_pairs)
-            mean = posterior.mean      # [n_w, 1]
-            covar = posterior.covariance_matrix  # [n_w, n_w]
+            posterior = self.gp.posterior(xw_pair)
 
         # 3. 판타지 샘플 생성 (미래 관측 시뮬레이션)
         fantasy_improvements = []
 
         for i in range(self.n_fantasies):
-            # 판타지 관측 샘플링
-            fantasy_obs_raw = posterior.rsample()  # [1, n_w, 1]
+            # 판타지 관측 샘플링 (단일 값)
+            fantasy_obs_raw = posterior.rsample()  # [1, 1, 1]
+            fantasy_obs = fantasy_obs_raw.squeeze()  # scalar
 
-            # Dimension 맞추기: [1, n_w, 1] -> [n_w]
-            fantasy_obs = fantasy_obs_raw.squeeze(0).squeeze(-1)  # [n_w]
-
-            # 판타지 모델 생성 (새 관측 추가된 GP)
-            fantasy_model = self._create_fantasy_model(xw_pairs, fantasy_obs)
+            # 판타지 모델 생성 (1개 관측만 추가)
+            fantasy_model = self._create_fantasy_model(xw_pair, fantasy_obs.unsqueeze(0))
 
             # 판타지 모델에서 CVaR 계산
             fantasy_cvar = self._compute_cvar_from_model(fantasy_model, x_candidate)
@@ -165,33 +164,47 @@ class BoRiskAcquisition:
     
     def optimize(self, bounds, n_candidates=100):
         """
-        획득 함수 최적화
+        획득 함수 최적화 - (x, w) 쌍 선택
+
+        BoRisk의 핵심: 모든 (x, w) 조합을 평가하고 최고의 쌍 선택!
 
         Args:
             bounds: 파라미터 경계 [2, param_dim]
-            n_candidates: 후보 수
+            n_candidates: x 후보 수
 
         Returns:
             best_x: 최적 파라미터 [1, param_dim]
+            best_w_idx: 최적 환경 인덱스
             best_kg: KG 값
         """
-        # 랜덤 후보 생성
-        param_dim = bounds.shape[1]  # bounds의 dimension을 동적으로 가져옴
+        # 랜덤 x 후보 생성
+        param_dim = bounds.shape[1]
         candidates = torch.rand(n_candidates, param_dim, dtype=self.dtype, device=self.device)
         candidates = bounds[0] + (bounds[1] - bounds[0]) * candidates
-        
-        # 각 후보의 KG 계산
-        kg_values = []
-        for x in candidates:
-            kg = self.compute_kg_value(x)
-            kg_values.append(kg)
-        
-        # 최적 후보 선택
-        best_idx = np.argmax(kg_values)
-        best_x = candidates[best_idx].unsqueeze(0)
-        best_kg = kg_values[best_idx]
-        
-        return best_x, best_kg
+
+        # 모든 (x, w) 조합 평가
+        best_kg = -float('inf')
+        best_x = None
+        best_w_idx = None
+
+        print(f"  [BoRisk-KG] Evaluating {n_candidates} x candidates × {self.n_w} w environments = {n_candidates * self.n_w} combinations...")
+
+        for i, x in enumerate(candidates):
+            for w_idx in range(self.n_w):
+                kg = self.compute_kg_value_for_single_w(x, w_idx)
+
+                if kg > best_kg:
+                    best_kg = kg
+                    best_x = x
+                    best_w_idx = w_idx
+
+            # 진행 상황 출력 (10% 단위)
+            if (i + 1) % max(1, n_candidates // 10) == 0:
+                print(f"    Progress: {i+1}/{n_candidates} x candidates evaluated, best KG={best_kg:.6f}")
+
+        print(f"  [BoRisk-KG] Best (x, w_idx={best_w_idx}): KG={best_kg:.6f}")
+
+        return best_x.unsqueeze(0), best_w_idx, best_kg
 
 
 class SimplifiedBoRiskKG:
@@ -260,56 +273,67 @@ class SimplifiedBoRiskKG:
 def optimize_borisk(gp, w_set, bounds, alpha=0.3, use_full_kg=False):
     """
     BoRisk 최적화 메인 함수
-    
+
     Args:
         gp: 학습된 GP 모델
-        w_set: 환경 세트
+        w_set: 환경 세트 [n_w, 6]
         bounds: 파라미터 경계
         alpha: CVaR threshold
         use_full_kg: True면 전체 KG, False면 간소화 버전
-        
+
     Returns:
-        best_x: 최적 파라미터
+        best_x: 최적 파라미터 [1, param_dim]
+        best_w_idx: 최적 환경 인덱스 (Full KG) 또는 랜덤 (Simplified)
         acq_value: 획득 함수 값
         method: 사용된 방법
     """
-    
+    n_w = w_set.shape[0]
+
     if use_full_kg:
         # 전체 Knowledge Gradient (느리지만 정확)
         try:
             borisk_acq = BoRiskAcquisition(gp, w_set, alpha, n_fantasies=16)
-            best_x, acq_value = borisk_acq.optimize(bounds)
-            return best_x, acq_value, "BoRisk-KG"
+            best_x, best_w_idx, acq_value = borisk_acq.optimize(bounds)
+            return best_x, best_w_idx, acq_value, "BoRisk-KG"
         except Exception as e:
             print(f"Full KG failed: {e}, using simplified version")
+            import traceback
+            traceback.print_exc()
             use_full_kg = False
-    
+
     if not use_full_kg:
-        # 간소화 버전 (빠름)
+        # 간소화 버전 (빠름) - w는 랜덤 선택
         try:
             simple_kg = SimplifiedBoRiskKG(gp, w_set, alpha)
-            
+
             # 후보 생성 및 평가
             n_candidates = 256
-            param_dim = bounds.shape[1]  # bounds의 dimension을 동적으로 가져옴
+            param_dim = bounds.shape[1]
             candidates = torch.rand(n_candidates, param_dim, dtype=bounds.dtype, device=bounds.device)
             candidates = bounds[0] + (bounds[1] - bounds[0]) * candidates
-            
+
             acq_values = simple_kg.compute_acquisition_value(candidates, bounds)
-            
+
             best_idx = torch.argmax(acq_values)
             best_x = candidates[best_idx].unsqueeze(0)
             acq_value = acq_values[best_idx].item()
-            
-            return best_x, acq_value, "Simplified-CVaR-KG"
-            
+
+            # Simplified는 w를 선택하지 않으므로 랜덤 선택
+            best_w_idx = np.random.randint(0, n_w)
+            print(f"  [Simplified] Random w_idx={best_w_idx} selected")
+
+            return best_x, best_w_idx, acq_value, "Simplified-CVaR-KG"
+
         except Exception as e:
             print(f"Simplified KG failed: {e}")
+            import traceback
+            traceback.print_exc()
             # 최후의 폴백
-            param_dim = bounds.shape[1]  # bounds의 dimension을 동적으로 가져옴
+            param_dim = bounds.shape[1]
             x = torch.rand(1, param_dim, dtype=bounds.dtype, device=bounds.device)
             x = bounds[0] + (bounds[1] - bounds[0]) * x
-            return x, 0.0, "Random-fallback"
+            w_idx = np.random.randint(0, n_w)
+            return x, w_idx, 0.0, "Random-fallback"
 
 
 if __name__ == "__main__":

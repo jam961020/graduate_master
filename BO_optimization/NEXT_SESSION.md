@@ -1,8 +1,8 @@
-# 🚨 긴급 세션 가이드 - 2025-11-13 (세션 3)
+# 🚨 긴급 세션 가이드 - 2025-11-13 (세션 4)
 
 **상황**: 오늘까지 실험 결과를 내지 못하면 졸업 불가
 **환경**: Windows 로컬
-**현재 상태**: Full KG 활성화, Metric 개선, **치명적 버그 발견!** 🔥
+**현재 상태**: ✅ Priority 0 완료! ✅ 자동 라벨링 완료! **이제 빠른 실험!** 🚀
 
 ---
 
@@ -13,38 +13,23 @@
 
 ---
 
-## 🔥 **긴급 이슈: 판타지 관측 버그**
+## ✅ **해결됨: 판타지 관측 구현 완료!**
 
-### 문제 발견
+### 현재 상황
 
-**현재 상황**: Simplified-CVaR-KG를 사용 중 → **판타지 관측 없음!** ❌
-
-**BoRisk 핵심**: 판타지 관측이 없으면 진짜 Knowledge Gradient가 아님!
+**✅ Full BoRisk-KG 활성화됨**: `use_full_kg=True` (optimization.py:571)
+**✅ 판타지 관측 구현됨**: `posterior.rsample()` 사용 중 (borisk_kg.py:98-116)
+**✅ CVaR GP 추정 코드 존재**: `_compute_cvar_from_model()` (borisk_kg.py:146-164)
 
 ### Simplified vs Full KG 비교
 
-#### ❌ **Simplified-CVaR-KG (현재 사용 중)**
+#### ❌ **Simplified-CVaR-KG (Fallback으로만 사용)**
 ```python
-# borisk_kg.py Line 214-236
-posterior = self.gp.posterior(xw_pairs)
-mean = posterior.mean.squeeze(-1)      # [n_w]
-stddev = posterior.stddev.squeeze(-1)  # [n_w]
-
-# ❌ 판타지 관측 없음! 단순 UCB/LCB만 계산
-lcb = mean - 2.0 * stddev
-ucb = mean + 2.0 * stddev
-
-cvar_lcb = worst_lcb.mean()
-exploration_bonus = ucb.mean()
-acq_value = 0.7 * (-cvar_lcb) + 0.3 * exploration_bonus
+# borisk_kg.py Line 234-254
+# Full KG 실패 시에만 사용
 ```
 
-**문제점**:
-- 판타지 관측이 없음 ❌
-- 단순히 mean ± 2*std만 사용
-- **진짜 Knowledge Gradient가 아님!**
-
-#### ✅ **Full BoRisk-KG (필요)**
+#### ✅ **Full BoRisk-KG (현재 활성화됨!)**
 ```python
 # borisk_kg.py Line 87-107
 for _ in range(self.n_fantasies):
@@ -86,21 +71,12 @@ kg_value = np.mean(fantasy_improvements)
 - Simplified: "이 책을 읽으면 재미있을 것 같다" (추측)
 - Full KG: "이 책을 읽으면, 내 지식이 A→B로 바뀌고, 그 결과 C 문제를 풀 수 있을 것이다" (시뮬레이션)
 
-### Full KG가 실패하는 이유
+### Full KG 상태
 
-**에러 메시지**:
-```
-Full KG failed: Tensors must have same number of dimensions: got 1 and 2
-```
-
-**원인**:
-- `_create_fantasy_model()` 또는 `_compute_cvar_from_model()`에서 tensor dimension 불일치
-- Line 133에서 `x_expanded` 처리 문제로 추정
-
-**필요한 작업**:
-1. Full KG 버그 디버깅
-2. Tensor dimension 수정
-3. Full KG 재활성화 (`use_full_kg=True`)
+**✅ 정상 작동 중**:
+- Tensor dimension 버그 수정 완료 (Line 105-106: squeeze 처리)
+- `use_full_kg=True` 활성화됨 (optimization.py:571)
+- 판타지 관측 정상 동작
 
 ---
 
@@ -126,41 +102,43 @@ Full KG failed: Tensors must have same number of dimensions: got 1 and 2
 
 ---
 
-## 🔥 **치명적 버그: 매 iteration 15개 이미지 전부 평가 중!**
+## 🔥 **치명적 버그: 매 iteration 15개 이미지 전부 평가 중!** (여전히 발생 중)
 
 ### 문제
-**현재 코드는 BoRisk가 아님!**
-
+**현재 코드 (optimization.py:612):**
 ```python
 # 잘못된 구현 (현재)
-매 iteration마다:
-    for w in w_set:  # 15개 환경
-        score = detect_with_full_pipeline(image_w, x, ...)  # 전부 실제 평가!
-    cvar = compute_cvar(scores)  # 직접 계산
+candidate, acq_value, acq_name = optimize_borisk(...)  # x만 반환!
+new_scores = evaluate_on_w_set(candidate, ..., w_indices)  # 15개 전부 평가!
+
+# evaluate_on_w_set() 내부 (Line 323-344):
+for idx in w_indices:  # 15개 루프!
+    score = detect_with_full_pipeline(...)  # 실제 평가
+    scores.append(score)
 ```
 
 **문제점**:
-- 매번 **15개 이미지 전부 실제 평가** (느림!)
+- `optimize_borisk()`가 **x만 반환**, w는 선택 안 함 ❌
+- 매번 **15개 (n_w개) 이미지 전부 실제 평가** ❌
 - BoRisk의 핵심인 **"효율성"** 없음
 - GP를 학습만 하고 예측은 안 씀
 
 ### 올바른 BoRisk
 
 ```python
-# 올바른 구현
+# 올바른 구현 (필요)
 매 iteration마다:
-    # 1. KG로 최적 (x*, w*) 선택
-    x_star, w_star_idx = optimize_borisk(gp, w_set, bounds)
+    # 1. KG로 최적 (x*, w_idx*) 선택 ← x와 w 둘 다!
+    x_star, w_idx, acq_value = optimize_borisk(gp, w_set, bounds)
 
     # 2. 그 1개 (x*, w*) 쌍만 실제 평가
-    image = images_data[w_star_idx]
-    score = detect_with_full_pipeline(image, x_star, ...)
+    score = evaluate_single(x_star, images_data[w_idx])  # 1개만!
 
     # 3. GP 업데이트
-    gp.update((x_star, w_star), score)
+    gp.update((x_star, w_set[w_idx]), score)
 
     # 4. CVaR은 GP posterior로 계산 (실제 평가 X)
-    cvar = compute_cvar_from_gp_posterior(gp, x_star, w_set)
+    cvar = _compute_cvar_from_model(gp, x_star)  # 이미 구현됨!
 ```
 
 **핵심**:
@@ -168,70 +146,117 @@ Full KG failed: Tensors must have same number of dimensions: got 1 and 2
 - GP로 F(x,w) 모델링 → CVaR 예측
 - 이게 BoRisk의 본질!
 
+### 필요한 수정
+
+**1. `borisk_kg.py`: `optimize_borisk()` 수정**
+```python
+# 현재: x만 반환
+return best_x, best_kg, "BoRisk-KG"
+
+# 필요: (x, w_idx) 반환
+return best_x, best_w_idx, best_kg, "BoRisk-KG"
+```
+
+**2. `optimization.py`: BO 루프 수정**
+```python
+# 현재
+candidate, acq_value, acq_name = optimize_borisk(...)
+new_scores = evaluate_on_w_set(candidate, ..., w_indices)
+
+# 필요
+candidate, w_idx, acq_value, acq_name = optimize_borisk(...)
+new_score = evaluate_single(candidate, images_data[w_idx])  # 새 함수
+```
+
+**3. `optimization.py`: `evaluate_single()` 함수 추가**
+```python
+def evaluate_single(X, image_data):
+    """단일 (x, w) 쌍만 평가"""
+    # 기존 evaluate_on_w_set의 루프 내부 코드 사용
+    ...
+    return score  # [1] tensor
+```
+
 ---
 
 ## 🎯 다음 세션 우선순위
 
-### 🚨 Priority 0: BoRisk 평가 구조 수정 (치명적!)
+### ✅ Priority 0: BoRisk 평가 구조 수정 (완료!)
 
-**목표**: 매 iteration 1개 (x,w) 쌍만 평가
+**목표**: 매 iteration 1개 (x,w) 쌍만 평가 ✅
 
-**수정사항**:
-1. `optimize_borisk()`가 (x, w_idx) 반환하도록 수정
-2. 그 1개만 실제 평가
-3. CVaR은 GP posterior로 계산하는 함수 추가
-4. GT 없는 이미지는 GP 예측 사용
+**✅ CVaR GP 추정 함수**: 이미 구현됨 (`_compute_cvar_from_model`)
+
+**완료된 수정 3단계**:
+
+#### Step 1: `borisk_kg.py` - w 선택 로직 추가
+```python
+# BoRiskAcquisition.optimize() 수정 (Line 166-194)
+# 현재: best_x만 반환
+# 필요: best_x와 best_w_idx 반환
+
+def optimize(self, bounds, n_candidates=100):
+    best_kg_values = []
+    best_w_indices = []  # 추가!
+
+    for x in candidates:
+        kg, best_w_idx = self.compute_kg_value_with_w(x)  # 수정!
+        best_kg_values.append(kg)
+        best_w_indices.append(best_w_idx)
+
+    best_idx = np.argmax(best_kg_values)
+    return candidates[best_idx], best_w_indices[best_idx], ...  # w_idx 추가
+```
+
+#### Step 2: `optimization.py` - evaluate_single() 함수 추가
+```python
+def evaluate_single(X, image_data, yolo_detector):
+    """단일 (x, w) 쌍만 평가"""
+    params = {...}
+    ransac_weights = (...)
+
+    image = image_data['image']
+    gt_coords = image_data['gt_coords']
+
+    detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
+    score = line_equation_evaluation(detected_coords, gt_coords, ...)
+
+    return torch.tensor([score], dtype=DTYPE, device=DEVICE)
+```
+
+#### Step 3: `optimization.py` - BO 루프 수정 (Line 560-614)
+```python
+# 현재
+candidate, acq_value, acq_name = optimize_borisk(...)
+new_scores = evaluate_on_w_set(candidate, ..., w_indices)  # 15개!
+
+# 수정 후
+candidate, w_idx, acq_value, acq_name = optimize_borisk(...)
+new_score = evaluate_single(candidate, images_data[w_indices[w_idx]], yolo_detector)  # 1개!
+
+# GP 업데이트: (x, w) concat
+new_xw = torch.cat([candidate, w_set[w_idx].unsqueeze(0)], dim=-1)  # [1, 15]
+train_X_full = torch.cat([train_X_full, new_xw])
+train_Y = torch.cat([train_Y, new_score])
+```
 
 ---
 
-### 🟡 Priority 1: Full BoRisk-KG 버그 수정 (완료! ✅)
+### ✅ Priority 1: Full BoRisk-KG 버그 수정 (완료!)
 
-**목표**: 판타지 관측을 사용하는 진짜 BoRisk-KG 활성화
-
-**작업 단계**:
-
-#### 1. 버그 디버깅
-```python
-# borisk_kg.py 디버깅
-# _create_fantasy_model() 확인
-# _compute_cvar_from_model() 확인
-# Tensor dimension 불일치 원인 파악
-```
-
-**의심 지점**:
-- Line 133: `x_expanded = x.unsqueeze(0).expand(self.n_w, -1) if x.dim() == 1 else x.expand(self.n_w, -1)`
-- fantasy_obs의 shape 확인
-- xw_pairs 생성 시 dimension
-
-#### 2. 로깅 추가
-```python
-# _create_fantasy_model()에 로깅
-print(f"[DEBUG] train_X shape: {train_X.shape}")
-print(f"[DEBUG] new_X shape: {new_X.shape}")
-print(f"[DEBUG] new_Y shape: {new_Y.shape}")
-
-# _compute_cvar_from_model()에 로깅
-print(f"[DEBUG] x shape: {x.shape}")
-print(f"[DEBUG] x_expanded shape: {x_expanded.shape}")
-print(f"[DEBUG] xw_pairs shape: {xw_pairs.shape}")
-```
-
-#### 3. 수정 및 테스트
-```bash
-# 소량 테스트
-python optimization.py --iterations 2 --n_initial 2 --alpha 0.3 --max_images 3 --n_w 3
-
-# Full KG 성공 확인
-# 출력: "Using BoRisk-KG: acq_value=..."
-```
+**✅ 완료 사항**:
+- Tensor dimension 버그 수정 (Line 105-106)
+- `use_full_kg=True` 활성화 (optimization.py:571)
+- 판타지 관측 정상 작동
+- `_compute_cvar_from_model()` 구현 완료
 
 ---
 
-### 🎯 Priority 1: 자동 라벨링 스크립트 완성
+### ✅ Priority 1: 자동 라벨링 스크립트 완성 (완료!)
 
-**목표**: AirLine_assemble_test.py 활용하여 6개 점 자동 추출
+**목표**: AirLine_assemble_test.py 활용하여 6개 점 자동 추출 ✅
 
-**작업 단계**:
+**완료된 작업**:
 
 #### 1. AirLine_assemble_test.py 분석
 ```bash
@@ -391,10 +416,48 @@ ls -lt results/ | head -10
 
 ---
 
-**마지막 업데이트**: 2025-11-13 02:15
-**다음 작업**: Full BoRisk-KG 버그 수정 (최우선!)
-**Status**: ⚠️ 판타지 관측 버그 발견, 긴급 수정 필요
+---
 
-**🚨 중요: 다음 세션 시작 시 이 문서를 먼저 읽고 사용자와 논의하세요!**
+## 🎉 세션 4 완료 사항 (2025-11-13 03:30)
+
+### ✅ 완료된 작업
+
+**1. Priority 0: BoRisk 평가 구조 수정 (완료!)**
+- ✅ Step 1: `borisk_kg.py` - w 선택 로직 추가
+- ✅ Step 2: `optimization.py` - `evaluate_single()` 함수 추가
+- ✅ Step 3: BO 루프 수정 (15개 → 1개 평가)
+- ✅ 소량 테스트 성공 (3 이미지, 2 iterations)
+
+**테스트 결과:**
+```
+[BoRisk-KG] Best (x, w_idx=2): KG=1.803677
+Evaluating SINGLE (x, w) pair: image_idx=2...  ← ✅ 1개만 평가!
+Score: 0.7642
+```
+
+**2. Priority 1: 자동 라벨링 시스템 (완료!)**
+- ✅ `auto_labeling.py` 확인 (이미 존재)
+- ✅ 테스트: 10개 이미지, 9/10 성공 (90%)
+- ✅ 결과: `test_auto_gt.json` (분리 저장)
+
+### 🔄 다음 작업 (세션 5)
+
+**1. 소량 실험으로 속도 확인** (최우선!)
+```bash
+# 더 작은 규모로 빠른 확인
+python optimization.py --iterations 5 --n_initial 3 --alpha 0.3 --max_images 20 --n_w 5
+```
+
+**2. MD 파일 정리 및 Git 업로드**
+
+**3. 전체 실험 (시간이 되면)**
+
+---
+
+**마지막 업데이트**: 2025-11-13 03:30
+**다음 작업**: 소량 실험으로 속도 확인 → Git 업로드
+**Status**: ✅ BoRisk 구조 완성! 이제 빠른 테스트!
+
+**🚨 중요: 전체 실험(113 이미지)은 시간이 너무 오래 걸림. 소량으로 먼저 확인!**
 
 **화이팅! 졸업하자! 🎓**

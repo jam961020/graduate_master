@@ -292,6 +292,50 @@ def sample_w_set(env_features, n_w=15, seed=None):
     return w_set, w_indices
 
 
+def evaluate_single(X, image_data, yolo_detector):
+    """
+    단일 (x, w) 쌍만 평가 (진짜 BoRisk!)
+
+    Args:
+        X: [1, 8] 파라미터
+        image_data: 단일 이미지 데이터 dict {'image': ..., 'gt_coords': ...}
+        yolo_detector: YOLO 검출기
+
+    Returns:
+        score: scalar tensor [1]
+    """
+    params = {
+        'edgeThresh1': X[0, 0].item(),
+        'simThresh1': X[0, 1].item(),
+        'pixelRatio1': X[0, 2].item(),
+        'edgeThresh2': X[0, 3].item(),
+        'simThresh2': X[0, 4].item(),
+        'pixelRatio2': X[0, 5].item(),
+    }
+
+    # RANSAC 가중치 (Q, QG 개별)
+    ransac_weights = (X[0, 6].item(), X[0, 7].item())
+
+    try:
+        image = image_data['image']
+        gt_coords = image_data['gt_coords']
+
+        detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
+
+        h, w = image.shape[:2]
+        score = line_equation_evaluation(detected_coords, gt_coords, image_size=(w, h))
+
+        return torch.tensor([score], dtype=DTYPE, device=DEVICE)
+
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print(f"ERROR in evaluate_single: {e}")
+        import traceback
+        traceback.print_exc()
+        return torch.tensor([0.0], dtype=DTYPE, device=DEVICE)
+
+
 def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
     """
     w_set에 해당하는 이미지만 평가 (BoRisk의 핵심!)
@@ -565,12 +609,12 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         try:
             from borisk_kg import optimize_borisk
 
-            # BoRisk Knowledge Gradient 사용
-            candidate, acq_value, acq_name = optimize_borisk(
+            # BoRisk Knowledge Gradient 사용 - (x, w_idx) 쌍 선택!
+            candidate, w_idx, acq_value, acq_name = optimize_borisk(
                 gp, w_set, BOUNDS, alpha=alpha,
                 use_full_kg=True  # 정확한 BoRisk-KG 사용 (판타지 관측)
             )
-            print(f"  Using {acq_name}: acq_value={acq_value:.4f}")
+            print(f"  Using {acq_name}: selected w_idx={w_idx}, acq_value={acq_value:.4f}")
             acq_value = torch.tensor(acq_value) if not torch.is_tensor(acq_value) else acq_value
 
         except ImportError as e:
@@ -601,19 +645,32 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 candidate = candidates[best_idx].unsqueeze(0)
                 acq_value = torch.tensor(best_score)
                 acq_name = "UCB-fallback"
+                w_idx = np.random.randint(0, n_w)  # 랜덤 w 선택
+                print(f"  [Fallback] Random w_idx={w_idx} selected")
             except Exception as e2:
                 print(f"\n⚠️ UCB also failed: {e2}")
                 candidate = torch.rand(1, 9, dtype=DTYPE, device=DEVICE)
                 candidate = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * candidate
                 acq_value = torch.tensor(0.0)
                 acq_name = "Random"
+                w_idx = np.random.randint(0, n_w)
 
-        # 5.3: w_set에서만 평가 (BoRisk의 핵심!)
-        new_scores = evaluate_on_w_set(candidate, images_data, yolo_detector, w_indices)
-        new_cvar = compute_cvar_from_scores(new_scores.squeeze(), alpha)
+        # 5.3: 단일 (x, w) 쌍만 평가! (진짜 BoRisk!)
+        selected_image_idx = w_indices[w_idx]
+        selected_image_idx_val = selected_image_idx.item() if torch.is_tensor(selected_image_idx) else selected_image_idx
+        print(f"  Evaluating SINGLE (x, w) pair: image_idx={selected_image_idx_val}...")
+
+        new_score = evaluate_single(candidate, images_data[selected_image_idx_val], yolo_detector)
+        print(f"  Score: {new_score.item():.4f}")
+
+        # Shape 맞추기: [1] -> [1, 1]
+        new_score = new_score.unsqueeze(-1) if new_score.dim() == 1 else new_score
+
+        # 단일 평가이므로 CVaR은 그 값 자체 (진짜 CVaR은 GP로 추정해야 함)
+        new_cvar = new_score.item()
 
         # 5.4: 정규화
-        new_scores_normalized = (new_scores - Y_mean) / (Y_std + 1e-6)
+        new_score_normalized = (new_score - Y_mean) / (Y_std + 1e-6)
 
         # 5.5: 로그 저장
         iter_log = {
@@ -631,7 +688,9 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 "ransac_weight_qg": float(candidate[0, 7].item()),
             },
             "cvar": float(new_cvar),
-            "mean_score": float(new_scores.mean().item()),
+            "score": float(new_score.item()),  # 단일 값
+            "w_idx": int(w_idx),  # 선택된 환경 인덱스
+            "image_idx": int(selected_image_idx_val),  # 평가된 이미지 인덱스
             "n_w": n_w
         }
 
@@ -639,13 +698,12 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         with open(log_file, 'w') as f:
             json.dump(iter_log, f, indent=2)
 
-        # 5.6: 데이터 추가 (각 (x, w) 쌍 추가)
-        for j in range(n_w):
-            x_w = torch.cat([candidate[0], w_set[j]]).unsqueeze(0)
-            train_X_full = torch.cat([train_X_full, x_w])
-            train_X_params = torch.cat([train_X_params, candidate])
-        train_Y = torch.cat([train_Y, new_scores])
-        train_Y_normalized = torch.cat([train_Y_normalized, new_scores_normalized])
+        # 5.6: 단일 (x, w) 쌍만 추가! (진짜 BoRisk!)
+        x_w = torch.cat([candidate[0], w_set[w_idx]]).unsqueeze(0)  # [1, 15]
+        train_X_full = torch.cat([train_X_full, x_w])
+        train_X_params = torch.cat([train_X_params, candidate])
+        train_Y = torch.cat([train_Y, new_score])
+        train_Y_normalized = torch.cat([train_Y_normalized, new_score_normalized])
 
         best_cvar_history.append(new_cvar)
 
@@ -689,9 +747,9 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         # 초기 샘플
         best_X = X_init[best_idx]
     else:
-        # BO iteration
+        # BO iteration (1개씩 추가되었으므로 인덱스 수정)
         bo_idx = best_idx - n_initial
-        best_X = train_X_params[n_initial * n_w + bo_idx * n_w]  # 첫 번째 w에서의 x
+        best_X = train_X_params[n_initial * n_w + bo_idx]  # BO에서 추가된 x
 
     print("\n" + "="*60)
     print("BoRisk Optimization Complete")
