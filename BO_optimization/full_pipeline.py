@@ -34,6 +34,90 @@ except ImportError as e:
 from yolo_detector import YOLODetector
 
 
+def find_best_fit_line_ransac_with_weight(lines_by_algo, roi_w, roi_h,
+                                          ransac_weight_q=5, ransac_weight_qg=5):
+    """
+    RANSAC 가중치를 개별적으로 적용하는 버전 (Opus 제안)
+
+    Args:
+        lines_by_algo: 알고리즘별 라인 딕셔너리
+        roi_w, roi_h: ROI 크기
+        ransac_weight_q: AirLine_Q에 대한 가중치
+        ransac_weight_qg: AirLine_QG에 대한 가중치
+    """
+    # 픽셀 풀 생성
+    pixels_by_algo = defaultdict(set)
+    for algo, lines in lines_by_algo.items():
+        if lines is None or len(lines) == 0:
+            continue
+        for line in lines:
+            x1, y1, x2, y2 = line
+            pixels_by_algo[algo].update(get_line_pixels(int(x1), int(y1), int(x2), int(y2)))
+
+    # AirLine 프리셋별 픽셀 집합
+    air_q = pixels_by_algo.get("AirLine_Q", set())
+    air_qg = pixels_by_algo.get("AirLine_QG", set())
+    airline_any = air_q.union(air_qg)
+    airline_both = air_q.intersection(air_qg)
+
+    other_pixels = set()
+    for algo, pix in pixels_by_algo.items():
+        if not algo.startswith("AirLine"):
+            other_pixels.update(pix)
+
+    # 카테고리 분류 - 개별 가중치 적용
+    both_air = airline_both  # 두 AirLine 모두에서 나옴
+    one_air_q_only = air_q - air_qg - other_pixels  # Q만
+    one_air_qg_only = air_qg - air_q - other_pixels  # QG만
+    one_air_q_and_other = (air_q - air_qg).intersection(other_pixels)  # Q + 다른 알고리즘
+    one_air_qg_and_other = (air_qg - air_q).intersection(other_pixels)  # QG + 다른 알고리즘
+    other_only = other_pixels - airline_any  # 다른 알고리즘만
+
+    # 픽셀 가중치 풀 조합 - 개별 가중치 적용
+    pixel_pool = []
+    pixel_pool.extend(list(other_only) * 1)  # 기본 가중치
+    pixel_pool.extend(list(one_air_q_only) * int(ransac_weight_q * 0.6))  # Q만 있을 때
+    pixel_pool.extend(list(one_air_qg_only) * int(ransac_weight_qg * 0.6))  # QG만 있을 때
+    pixel_pool.extend(list(one_air_q_and_other) * int(ransac_weight_q))  # Q + 다른
+    pixel_pool.extend(list(one_air_qg_and_other) * int(ransac_weight_qg))  # QG + 다른
+    pixel_pool.extend(list(both_air) * int((ransac_weight_q + ransac_weight_qg) / 2 * 2))  # 둘 다 있을 때
+
+    if len(pixel_pool) < 2:
+        return None
+
+    points = np.array(pixel_pool)
+
+    # RANSAC 적합
+    try:
+        from sklearn.linear_model import RANSACRegressor
+        ransac = RANSACRegressor(max_trials=10000, min_samples=2)
+
+        x_range = np.ptp(points[:, 0])
+        y_range = np.ptp(points[:, 1])
+        is_vertical = x_range < y_range
+
+        X = points[:, 1].reshape(-1, 1) if is_vertical else points[:, 0].reshape(-1, 1)
+        y = points[:, 0] if is_vertical else points[:, 1]
+
+        ransac.fit(X, y)
+
+        m = ransac.estimator_.coef_[0]
+        c = ransac.estimator_.intercept_
+
+        if is_vertical:
+            x1, x2 = m * 0 + c, m * roi_h + c
+            y1, y2 = 0, roi_h
+        else:
+            y1, y2 = m * 0 + c, m * roi_w + c
+            x1, x2 = 0, roi_w
+
+        return extend_line((x1, y1), (x2, y2), roi_w, roi_h)
+
+    except Exception as e:
+        print(f"  [WARN] RANSAC fitting failed: {e}")
+        return None
+
+
 def find_upper_point_by_intersection(longi_res):
     """AirLine 수직 교차선을 이용해 Upper Point를 찾습니다."""
     if not longi_res:
@@ -299,10 +383,10 @@ def detect_lines_in_roi(roi_bgr_enhanced, roi_gray_enhanced, params):
     return lines_by_algo
 
 
-def process_guideline_roi(lines_by_algo, roi_bgr, cls, roi_bbox, image_width, params):
+def process_guideline_roi(lines_by_algo, roi_bgr, cls, roi_bbox, image_width, params, ransac_weights=None):
     """
     클래스 1 (fillet) 또는 2 (longi) 처리
-    
+
     Args:
         lines_by_algo: 알고리즘별 선 검출 결과
         roi_bgr: ROI 이미지
@@ -310,12 +394,19 @@ def process_guideline_roi(lines_by_algo, roi_bgr, cls, roi_bbox, image_width, pa
         roi_bbox: ROI 경계 (x1, y1, x2, y2)
         image_width: 전체 이미지 너비
         params: 파라미터 dict (BO에서 전달)
-    
+        ransac_weights: (ransac_weight_q, ransac_weight_qg) 튜플
+
     Returns:
         result dict or None
     """
     x1_roi, y1_roi, x2_roi, y2_roi = roi_bbox
     roi_w, roi_h = roi_bgr.shape[1], roi_bgr.shape[0]
+
+    # RANSAC 가중치 기본값
+    if ransac_weights is None:
+        ransac_weight_q, ransac_weight_qg = 5, 5
+    else:
+        ransac_weight_q, ransac_weight_qg = ransac_weights
     
     # 1. 방향성 필터
     filtered_after_diag = {}
@@ -350,20 +441,16 @@ def process_guideline_roi(lines_by_algo, roi_bgr, cls, roi_bbox, image_width, pa
     for algo, lines in final_candidates.items():
         final_candidates[algo] = np.array(lines)
 
-    # ✅ params 사용 (이제 인자로 받음!)
-    w_center = float(params.get('ransac_center_w', 0.5))
-    w_length = float(params.get('ransac_length_w', 0.5))
-    w_consensus = int(params.get('ransac_consensus_w', 5))
-    
-    ransac_line = weighted_ransac_line(
+    # ✅ Opus의 개별 가중치 방식 사용
+    ransac_line = find_best_fit_line_ransac_with_weight(
         final_candidates, roi_w, roi_h,
-        w_center=w_center, w_length=w_length,
-        consensus_weight=w_consensus
+        ransac_weight_q=ransac_weight_q,
+        ransac_weight_qg=ransac_weight_qg
     )
     
     # [디버그] RANSAC 결과 출력
     # print(f"[RANSAC] cand={sum(len(v) for v in final_candidates.values())} | "
-    #       f"w_center={w_center:.2f}, w_length={w_length:.2f}, w_consensus={w_consensus} | "
+    #       f"weight_q={ransac_weight_q:.1f}, weight_qg={ransac_weight_qg:.1f} | "
     #       f"success={ransac_line is not None}")
 
     if ransac_line:
@@ -417,19 +504,24 @@ def process_collar_roi(lines_by_algo, roi_bgr, cls, roi_bbox, image_width, param
     return None
 
 
-def detect_with_full_pipeline(image, params, yolo_detector):
+def detect_with_full_pipeline(image, params, yolo_detector, ransac_weights=None):
     """
     YOLO + 필터 + 교점 계산 전체 파이프라인
-    
+
     Args:
         image: BGR 이미지
         params: AirLine 파라미터 dict
         yolo_detector: YOLODetector 인스턴스
-    
+        ransac_weights: (ransac_weight_q, ransac_weight_qg) 튜플
+
     Returns:
         coords: 12개 좌표 dict
     """
     h, w = image.shape[:2]
+
+    # RANSAC 가중치 기본값
+    if ransac_weights is None:
+        ransac_weights = (5, 5)
     
     # 1. YOLO ROI 검출
     rois = yolo_detector.detect_rois(image)
@@ -467,15 +559,16 @@ def detect_with_full_pipeline(image, params, yolo_detector):
         # 선 검출
         lines_by_algo = detect_lines_in_roi(roi_bgr_enhanced, roi_gray_enhanced, params)
         
-        # 클래스별 처리 (✅ params 전달!)
+        # 클래스별 처리 (✅ params + ransac_weights 전달!)
         if cls in [1, 2]:  # fillet, longi
             result = process_guideline_roi(
-                lines_by_algo, roi_bgr, cls, 
-                (x1_roi, y1_roi, x2_roi, y2_roi), w, params
+                lines_by_algo, roi_bgr, cls,
+                (x1_roi, y1_roi, x2_roi, y2_roi), w, params,
+                ransac_weights=ransac_weights
             )
             if result:
                 processed_results.append(result)
-        
+
         elif cls in [3, 4, 5, 6]:  # collar
             result = process_collar_roi(
                 lines_by_algo, roi_bgr, cls,
