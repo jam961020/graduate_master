@@ -65,64 +65,71 @@ class BoRiskAcquisition:
     def compute_kg_value(self, x_candidate):
         """
         Knowledge Gradient 계산
-        
+
         Args:
             x_candidate: [1, 9] 파라미터 후보
-            
+
         Returns:
             kg_value: KG 값 (Expected CVaR Improvement)
         """
         x_candidate = x_candidate.squeeze(0) if x_candidate.dim() > 1 else x_candidate
-        
+
         # 1. (x, w) 쌍 생성
         x_expanded = x_candidate.unsqueeze(0).expand(self.n_w, -1)  # [n_w, 9]
         xw_pairs = torch.cat([x_expanded, self.w_set], dim=-1)      # [n_w, 15]
-        
+
         # 2. 현재 GP의 posterior
         with torch.no_grad():
             posterior = self.gp.posterior(xw_pairs)
             mean = posterior.mean      # [n_w, 1]
             covar = posterior.covariance_matrix  # [n_w, n_w]
-        
+
         # 3. 판타지 샘플 생성 (미래 관측 시뮬레이션)
         fantasy_improvements = []
-        
-        for _ in range(self.n_fantasies):
+
+        for i in range(self.n_fantasies):
             # 판타지 관측 샘플링
-            fantasy_obs = posterior.rsample()  # [n_w, 1]
-            
+            fantasy_obs_raw = posterior.rsample()  # [1, n_w, 1]
+
+            # Dimension 맞추기: [1, n_w, 1] -> [n_w]
+            fantasy_obs = fantasy_obs_raw.squeeze(0).squeeze(-1)  # [n_w]
+
             # 판타지 모델 생성 (새 관측 추가된 GP)
             fantasy_model = self._create_fantasy_model(xw_pairs, fantasy_obs)
-            
+
             # 판타지 모델에서 CVaR 계산
             fantasy_cvar = self._compute_cvar_from_model(fantasy_model, x_candidate)
-            
+
             # 개선도 계산
             improvement = max(0, fantasy_cvar - self.current_best_cvar)
             fantasy_improvements.append(improvement)
-        
+
         # 4. Expected Improvement (판타지들의 평균)
         kg_value = np.mean(fantasy_improvements)
-        
+
         return kg_value
     
     def _create_fantasy_model(self, new_X, new_Y):
         """
         판타지 모델 생성 (새 관측 추가)
-        
+
         간단한 구현: 기존 데이터에 새 관측 추가
         """
         # 기존 학습 데이터
         train_X = self.gp.train_inputs[0]
         train_Y = self.gp.train_targets
-        
+
+        # new_Y를 1D로 보장 (이미 [n_w] shape이어야 함)
+        if new_Y.dim() > 1:
+            new_Y = new_Y.squeeze()
+
         # 새 데이터 추가
         updated_X = torch.cat([train_X, new_X])
-        updated_Y = torch.cat([train_Y, new_Y.squeeze(-1)])
-        
+        updated_Y = torch.cat([train_Y, new_Y])  # 둘 다 1D tensor
+
         # 새 GP 생성 (간단한 버전)
         fantasy_gp = SingleTaskGP(updated_X, updated_Y.unsqueeze(-1))
-        
+
         return fantasy_gp
     
     def _compute_cvar_from_model(self, model, x):
@@ -132,17 +139,17 @@ class BoRiskAcquisition:
         # (x, w) 쌍 생성
         x_expanded = x.unsqueeze(0).expand(self.n_w, -1) if x.dim() == 1 else x.expand(self.n_w, -1)
         xw_pairs = torch.cat([x_expanded, self.w_set], dim=-1)
-        
+
         # 예측
         with torch.no_grad():
             posterior = model.posterior(xw_pairs)
             predictions = posterior.mean.squeeze(-1)  # [n_w]
-        
+
         # CVaR 계산
         n_worst = max(1, int(self.n_w * self.alpha))
         worst_preds, _ = torch.topk(predictions, n_worst, largest=False)
         cvar = worst_preds.mean().item()
-        
+
         return cvar
     
     def optimize(self, bounds, n_candidates=100):

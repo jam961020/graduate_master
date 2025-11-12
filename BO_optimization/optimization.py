@@ -696,8 +696,8 @@ if __name__ == "__main__":
     import datetime
     
     parser = argparse.ArgumentParser(description="BoRisk CVaR Optimization for Welding")
-    parser.add_argument("--image_dir", default="dataset/images/test", help="Image directory")
-    parser.add_argument("--gt_file", default="dataset/ground_truth.json", help="Ground truth JSON")
+    parser.add_argument("--image_dir", default="../dataset/images/test", help="Image directory")
+    parser.add_argument("--gt_file", default="../dataset/ground_truth.json", help="Ground truth JSON")
     parser.add_argument("--yolo_model", default="models/best.pt", help="YOLO model path")
     parser.add_argument("--iterations", type=int, default=20, help="BO iterations")
     parser.add_argument("--n_initial", type=int, default=10, help="Initial samples")
