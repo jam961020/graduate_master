@@ -1,8 +1,82 @@
-# 🚨 긴급 세션 가이드 - 2025-11-12
+# 🚨 긴급 세션 가이드 - 2025-11-13
 
 **상황**: 오늘까지 실험 결과를 내지 못하면 졸업 불가
 **환경**: Windows 로컬 (리눅스 segfault로 회귀, 코드 복붙 사용 중)
-**현재 상태**: 실험은 실행되나 결과 분석 및 개선 필요
+**현재 상태**: RANSAC 버그 수정 완료, 새로운 버그 발견 (dimension mismatch)
+
+---
+
+## ✅ 완료된 작업 (2025.11.13 세션 - 현재)
+
+### 1. 파이프라인 아키텍처 문서화 완료 ✓
+- **PIPELINE_SUMMARY.md** 생성: 전체 파이프라인 구조 명확화
+- AirLine 원본 vs 커스텀 RANSAC 비교 분석
+- BO 최적화를 위한 커스텀 RANSAC 구현 이유 설명
+- 파일 위치: `BO_optimization/PIPELINE_SUMMARY.md`
+
+### 2. RANSAC Single-Line Bug 완전 수정 ✓
+- **문제**: `weighted_ransac_line()`에서 1개 라인만 있을 때 크래시
+  - Line 318: `rng.choice(len(all_lines), size=2, replace=False, p=probs)`
+  - Error: "Cannot take a larger sample than population when replace is False"
+- **수정**: `full_pipeline.py:316-318`에 방어 로직 추가
+  ```python
+  # ✅ 방어 로직: RANSAC은 최소 2개 라인 필요
+  if len(all_lines) < 2:
+      return None
+  ```
+- **검증**: 테스트 완료 - 6개 이미지 평가에서 RANSAC 에러 0건 ✅
+- **이전 실패 케이스**: alpha=0.1 실험 2건 모두 이 버그로 실패
+- **현재 상태**: RANSAC 버그 완전 해결!
+
+### 3. 새로운 버그 발견 (Dimension Mismatch)
+- **문제**: borisk_kg.py에서 tensor dimension 불일치
+  - Error: "The size of tensor a (8) must match the size of tensor b (9)"
+  - Location: Line 276, 290 in `optimize_borisk()`
+  - Cause: Parameter bounds dimension mismatch (8D vs 9D)
+- **영향**: RANSAC 버그 수정 후에도 실험 진행 불가
+- **근본 원인**: RANSAC 파라미터 3D가 bounds에 올바르게 반영되지 않음
+- **우선순위**: 🚨 High - 이것 수정해야 실험 가능!
+- **디버깅 필요**: `optimization.py`와 `borisk_kg.py` 파라미터 dimension 확인
+
+---
+
+## 🎯 다음 세션 우선순위 (2025.11.13)
+
+### 🚨 Priority 0: Dimension Mismatch 버그 수정 (긴급!)
+
+**목표**: 실험이 실행 가능하도록 파라미터 dimension 버그 해결
+
+**문제 분석**:
+1. Test 출력에서 확인된 상황:
+   - `train_X_full shape: torch.Size([6, 14])` → 14D인데 15D여야 함!
+   - Expected: 9D params + 6D env = 15D
+   - Actual: 14D (1개 파라미터 누락)
+
+2. 에러 발생 위치:
+   ```python
+   # borisk_kg.py:276
+   candidates = bounds[0] + (bounds[1] - bounds[0]) * candidates
+   # bounds는 8D, candidates는 9D
+   ```
+
+**디버깅 체크리스트**:
+- [ ] `optimization.py` BOUNDS 확인 (9D params 모두 있나?)
+- [ ] `optimize_borisk()`에 전달되는 bounds dimension 확인
+- [ ] RANSAC 3개 파라미터가 모두 포함되어 있나?
+- [ ] Environment 벡터 6D가 올바르게 concat되나?
+
+**예상 원인**:
+- RANSAC 파라미터 중 하나가 BOUNDS에 누락되었을 가능성
+- 또는 borisk_kg.py가 환경 벡터를 고려하지 않고 파라미터만 최적화하는 구조
+
+**수정 후 테스트**:
+```bash
+# 빠른 테스트
+python optimization.py --iterations 1 --n_initial 2 --alpha 0.3 --max_images 5 --n_w 3 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
+
+# 성공하면 전체 실험
+python optimization.py --alpha 0.1 --iterations 15 --n_initial 5 --n_w 15 --image_dir "../dataset/images/test" --gt_file "../dataset/ground_truth.json"
+```
 
 ---
 

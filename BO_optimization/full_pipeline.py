@@ -313,6 +313,10 @@ def weighted_ransac_line(final_candidates, roi_w, roi_h,
     iters = min(500, max(100, len(all_lines)*4))
     tol = max(2.0, 0.01*max(roi_w, roi_h))
 
+    # ✅ 방어 로직: RANSAC은 최소 2개 라인 필요
+    if len(all_lines) < 2:
+        return None
+
     rng = np.random.default_rng()
     for _ in range(iters):
         i1, i2 = rng.choice(len(all_lines), size=2, replace=False, p=probs)
