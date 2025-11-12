@@ -306,9 +306,11 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
     }
 
     scores = []
+    print(f"[DEBUG] Evaluating {len(w_indices)} images...")
 
-    for idx in w_indices:
+    for i, idx in enumerate(w_indices):
         try:
+            print(f"  [{i+1}/{len(w_indices)}] Image idx={idx.item() if torch.is_tensor(idx) else idx}...", end=' ')
             img_data = images_data[idx.item() if torch.is_tensor(idx) else idx]
             image = img_data['image']
             gt_coords = img_data['gt_coords']
@@ -318,10 +320,14 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
             h, w = image.shape[:2]
             score = line_equation_evaluation(detected_coords, gt_coords, image_size=(w, h))
             scores.append(score)
+            print(f"score={score:.4f}")
 
         except KeyboardInterrupt:
             raise
-        except Exception:
+        except Exception as e:
+            print(f"ERROR: {e}")
+            import traceback
+            traceback.print_exc()
             scores.append(0.0)
 
     return torch.tensor(scores, dtype=DTYPE, device=DEVICE).unsqueeze(-1)
