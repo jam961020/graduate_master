@@ -41,14 +41,16 @@ from scipy.spatial.transform import Rotation as R
 import math
 
 # ───────── 로컬 모듈 임포트 (중요) ──────────
-# 이 스크립트는 상위 디렉토리에서 실행되므로, 
+# 이 스크립트는 상위 디렉토리에서 실행되므로,
 # CRG311.pyd, deximodel.py 등이 있는 경로를 sys.path에 추가해줘야 합니다.
 sys.path.append(os.path.join(os.path.dirname(__file__))) # YOLO_AirLine 폴더
-sys.path.append(r"C:\Users\user\Desktop\study\task\weld2025\AirLine\build")
+# [수정] Windows 하드코딩 경로 제거 - Linux에서는 필요 없음
+# sys.path.append(r"C:\Users\user\Desktop\study\task\weld2025\AirLine\build")
 
 # ────────────────── 1. 전역 변수 및 모델 초기화 ─────────────────────
-# YOLO 모델
-YOLO_MODEL = YOLO(r".\YOLO_AirLine\best_250722.pt")
+# YOLO 모델 - __file__ 기준 경로로 수정
+_base_dir = os.path.dirname(os.path.abspath(__file__))
+YOLO_MODEL = YOLO(os.path.join(_base_dir, "best_250722.pt"))
 
 # AirLine 모델 (Coordinate Detector.py와 완전히 동일한 방식)
 THETA_RES, K_SIZE = 6, 9
@@ -69,9 +71,9 @@ def build_oridet():
 ORI_DET = build_oridet()
 EDGE_DET = DexiNed().cuda()
 
-# [중요] 원본과 동일하게 상위 폴더에서 실행하는 것을 가정하고 모델 경로 설정
+# [수정] __file__ 기준 경로로 수정
 # 또한 .eval()을 호출하지 않음으로써 "블랙 매직"을 유지합니다.
-edge_state_dict = torch.load(r".\YOLO_AirLine\dexi.pth", map_location='cuda:0')
+edge_state_dict = torch.load(os.path.join(_base_dir, "dexi.pth"), map_location='cuda:0')
 EDGE_DET.load_state_dict(edge_state_dict)
 
 AL_CFG = dict(edgeThresh=0, simThresh=0.9, pixelNumThresh=10)
@@ -91,8 +93,9 @@ BLUR_THRESHOLD_1ST = 15.0  # 1차 블러 필터링 임계값
 BLUR_THRESHOLD_2ND = 300.0 # 2차 블러 (마커 영역) 필터링 임계값
 ROTATION_THRESHOLD_DEG = 50.0 # 허용 총 회전 각도 (pitch+yaw+roll의 절대값 합)
 
-# 6. MLP 모델 경로
-MLP_MODEL_PATH = r"C:\Users\user\Desktop\study\task\weld2025\weld2025_samsung_git_temp\testing\samsung2024\welding_project\welding_project\model_A.pth"
+# 6. MLP 모델 경로 - [수정] Windows 경로 주석 처리
+# MLP_MODEL_PATH = r"C:\Users\user\Desktop\study\task\weld2025\weld2025_samsung_git_temp\testing\samsung2024\welding_project\welding_project\model_A.pth"
+MLP_MODEL_PATH = None  # MLP 모델은 현재 사용하지 않음
 
 # ─────────────────────── 2. 보조 및 처리 함수 ────────────────────────
 EXTS = {".png", ".jpg", ".jpeg"}
@@ -587,8 +590,12 @@ def process(data_dir: Path, out_root: Path, airline_config: dict):
     """
     # [추가] 카메라 파라미터 로드
     try:
-        camera_matrix = np.load('./YOLO_AirLine/pose_estimation_code_and_camera_matrix/camera_parameters/camera_matrix_filtered.npy')
-        dist_coeffs = np.load('./YOLO_AirLine/pose_estimation_code_and_camera_matrix/camera_parameters/dist_coeffs_filtered.npy')
+        # __file__ 기준 경로로 수정 (Linux 호환성)
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        cam_matrix_path = os.path.join(base_dir, 'pose_estimation_code_and_camera_matrix', 'camera_parameters', 'camera_matrix_filtered.npy')
+        dist_coeffs_path = os.path.join(base_dir, 'pose_estimation_code_and_camera_matrix', 'camera_parameters', 'dist_coeffs_filtered.npy')
+        camera_matrix = np.load(cam_matrix_path)
+        dist_coeffs = np.load(dist_coeffs_path)
         print("[INFO] Real camera parameters loaded.")
     except FileNotFoundError:
         print("[ERROR] Camera parameter files not found! Pose estimation will be skipped.")
@@ -1356,9 +1363,10 @@ def sort_rectangle_points_clockwise(pts):
 # ─────────────────────── 5. CLI 및 실험 실행기 ────────────────────────
 if __name__ == "__main__":
     print(f"현재 작업 디렉토리: {os.getcwd()}")
-    if not os.path.exists('YOLO_AirLine'):
-        print("오류: 이 스크립트는 프로젝트 루트(samsung2024)에서 실행해야 합니다.")
-        sys.exit(1)
+    # [수정] samsung2024 체크 제거 - 다른 디렉토리에서도 실행 가능하도록
+    # if not os.path.exists('YOLO_AirLine'):
+    #     print("오류: 이 스크립트는 프로젝트 루트(samsung2024)에서 실행해야 합니다.")
+    #     sys.exit(1)
 
     ap = argparse.ArgumentParser(description="선 검출 알고리즘 파라미터 조합 테스트")
     ap.add_argument("--data_dir", required=True, help="데이터셋 루트 (내부에 image, labels 폴더 존재)")

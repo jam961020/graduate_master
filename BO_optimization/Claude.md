@@ -3,7 +3,8 @@
 
 Repository: https://github.com/jam961020/graduate_master
 
-**최종 업데이트: 2025.11.11 20:30**
+**최종 업데이트: 2025.11.12 22:35**
+**🚨 긴급 상황: 오늘까지 실험 결과 필요 (졸업 마감)**
 
 ## 📌 대전제
 
@@ -74,176 +75,244 @@ graduate_master/
 
 ---
 
-## 🎯 현재 작업 상태 (2025.11.11 20:30)
+## 🎯 현재 작업 상태 (2025.11.12 22:35)
 
 ### ✅ 완료된 작업
 
-#### 1. BoRisk 알고리즘 완벽 이해 (완료 20:05)
-- BoRisk 논문 및 BoTorch 튜토리얼 분석 완료
-- 핵심 원리 파악: 매 iteration 1개 (x,w) 쌍만 평가
-- w_set 샘플링, GP 판타지, qMFKG 획득함수 구조 이해
-- `optimization_borisk.py` 발견 (기존 구현 존재)
+#### 1. Repository Clone 및 경로 문제 해결 (완료 2025.11.12)
+- Windows 로컬에 repository clone 완료
+- `test_clone_final.py` 모든 하드코딩 경로 수정
+- Windows → Linux 호환 경로로 변경 (`__file__` 기준)
+- 주요 수정:
+  - 카메라 파라미터 경로
+  - YOLO/DexiNed 모델 경로
+  - Windows 빌드 경로 주석 처리
+  - samsung2024 디렉토리 체크 제거
 
-#### 2. CRG311 Linux 빌드 (완료 19:00)
-- AirLine 공식 리포에서 C++ 소스 컴파일
-- pybind11로 Linux .so 생성
-- 경로 수정 및 lazy initialization 적용
+#### 2. BoRisk 알고리즘 구현 완료 (완료 2025.11.11)
+- BoRisk 논문 분석 및 완전 구현
+- w_set 샘플링 시스템 구축
+- GP 모델: (x, w) → y 학습 구조
+- qMFKG 획득 함수 적용
+- 환경 벡터 통합 완료
 
-#### 3. 평가 메트릭 변경 (완료 19:28)
-- **끝점 기반 → 직선 방정식 기반**
-- `line_equation_evaluation()` 함수 추가 (optimization.py:39-116)
-- Ax + By + C = 0 형식으로 정규화
-- 방향 유사도 (법선 벡터 내적) + 평행 거리
-- 가중치: direction 60%, distance 40%
+#### 3. 평가 메트릭 구현 (완료)
+- **직선 방정식 기반 평가**
+- `line_equation_evaluation()` (optimization.py:43-119)
+- 방향 유사도 (60%) + 평행 거리 (40%)
 
-#### 4. RANSAC 가중치 최적화 (완료 19:28)
-- **6D → 9D 확장**
-- BOUNDS 업데이트: 9D [AirLine 6D + RANSAC 3D]
-- `ransac_center_w`, `ransac_length_w`, `ransac_consensus_w` 추가
-- Sobol 엔진 차원 수정: dimension=9
-- objective_function에 파라미터 전달 구현
+#### 4. 9D 파라미터 최적화 (완료)
+- AirLine 6D + RANSAC 3D
+- `ransac_center_w`, `ransac_length_w`, `ransac_consensus_w`
+- BOUNDS 업데이트 완료
 
-#### 5. 로깅 최적화 (완료 19:28)
-- 화면 출력 최소화 (토큰 절약)
-- 상세 로그를 `logs/iter_XXX.json`로 파일 저장
-- 각 반복마다 9D 파라미터, CVaR, 획득함수 값 기록
+#### 5. 환경 벡터 시스템 (완료)
+- `environment_independent.py` 구현
+- 6D 환경 특징 추출
+- GP 입력으로 통합 완료
 
-#### 6. 환경 벡터 추출 구현 (완료)
-- `environment_independent.py` - 6D 환경 특징 추출
-- brightness, contrast, edge_density, texture_complexity, blur_level, noise_level
+### 🔄 현재 상황 (긴급!)
 
-### 🔄 진행 중
+#### 실행 환경
+- **Windows 로컬**: 실행 가능 ✓
+- **Linux 워크스테이션**: Segmentation fault (포기)
+- **코드 상태**: 복붙 사용 중 (정리 필요)
 
-- **이전 테스트 결과 확인 필요**
-- 로그: `new_test.log` (초기 샘플링 단계에서 멈춤)
-- 결과: `results/bo_cvar_20251111_191029.json` (19:10 실행)
+#### 실험 상태
+- **기본 실행**: 성공 ✓
+- **문제점 발견**:
+  1. CVaR과 평균이 동일하게 움직임
+  2. 메트릭이 실패 케이스를 제대로 반영하는지 의문
+  3. RANSAC 가중치 이해 오류 가능성
+  4. 환경 변수가 제대로 반영되는지 불명확
 
-### 🔴 Critical 문제점 - 최우선 해결 필요
+### 🔴 긴급 해결 필요 문제점 (2025.11.12)
 
-#### 1. BoRisk 알고리즘 구조 완전 누락 (CRITICAL - 최우선)
-**현재 코드는 BoRisk가 아니라 Vanilla BO + CVaR objective!**
+#### 1. 자동 라벨링 시스템 미구축 (최우선!)
+**현재 상황**:
+- 수동 라벨링에 의존 → 시간 소요 큼
+- GT 데이터 부족 → 실험 속도 느림
 
-**문제점**:
+**필요한 작업**:
+- [ ] `auto_labeling.py` 작성
+  - AirLine_assemble_test.py로 6개 점 자동 추출
+  - ground_truth.json 포맷으로 저장
+- [ ] `labeling_tool.py` 수정
+  - 자동 생성 GT 불러오기 기능
+  - 수동 수정 가능하도록
+
+**우선순위**: 🚨 최우선 (오늘 중 완료 필요)
+
+#### 2. 메트릭 재검토 필요 (High Priority)
+**문제 관찰**:
+- CVaR과 평균이 동일하게 움직임
+- 실패 케이스를 제대로 구분하지 못하는 것으로 의심
+
+**검토 사항**:
+- [ ] 선이 검출 안 되는 경우: 0점 처리 적절한가?
+- [ ] 방향은 맞는데 위치 틀린 경우: 거리 패널티 충분한가?
+- [ ] 다양한 실패 케이스로 메트릭 테스트
+
+**실험 필요**:
 ```python
-# optimization.py:217-273 - 매 iteration마다 113개 이미지 전부 평가
-def objective_function(X, images_data, yolo_detector, alpha=0.3):
-    scores = []
-    for img_data in images_data:  # 113개 전체 순회!
-        score = line_equation_evaluation(...)
-        scores.append(score)
-    cvar = np.mean(np.sort(scores)[:n_worst])  # 직접 CVaR 계산
+test_cases = [
+    ("완전 실패", detected=None),
+    ("방향만 맞음", detected=parallel_but_far),
+    ("위치만 맞음", detected=nearby_but_perpendicular),
+]
 ```
 
-**BoRisk 올바른 방식**:
-```python
-# 1. w_set 샘플링 (10~20개만)
-w_set, w_indices = sample_w_set(all_env_features, n_w=15)
+#### 3. RANSAC 가중치 이해 오류 (High Priority)
+**의심되는 문제**:
+- Claude가 RANSAC 가중치를 잘못 이해했을 가능성
+- 범위 [0.0, 1.0], [1, 10]이 적절한가?
+- 정규화 제약 필요한가?
 
-# 2. GP 모델: (x, w) → y
-model = SingleTaskGP(
-    train_X,  # [N, 9] params만
-    train_Y,  # [N*n_w, 1] 각 x마다 n_w개 환경
-    input_transform=AppendFeatures(feature_set=w_set)
-)
+**수정 필요**:
+- [ ] full_pipeline.py:160-236의 weighted_ransac_line 재검토
+- [ ] 가중치 범위 재설정
+- [ ] 극단값 실험으로 검증
 
-# 3. qMFKG 획득 함수 + CVaR objective
-acqf = qMultiFidelityKnowledgeGradient(
-    model=model,
-    num_fantasies=64,
-    objective=GenericMCObjective(cvar_objective)
-)
+#### 4. 환경 변수 효과 검증 (Medium Priority)
+**의문**:
+- n_w=15가 적절한가?
+- 환경 샘플링이 diverse한가?
+- alpha=0.3이 적절한가?
 
-# 4. 매 iteration: n_w개만 평가 (15개, 113개 아님!)
-candidate = optimize_acqf(acqf, bounds, q=1)
-observations = evaluate_on_w_set(candidate, w_indices)  # 15개만!
-```
+**실험 계획**:
+- [ ] n_w: [10, 15, 20, 30] 비교
+- [ ] alpha: [0.1, 0.2, 0.3, 0.4, 0.5] 비교
+- [ ] 환경 샘플링 방식: 랜덤 vs k-means clustering
 
-**필요한 수정**:
-- [ ] w_set 샘플링 함수 구현
-- [ ] AppendFeatures input_transform 추가
-- [ ] GP 모델 구조 변경: x → y에서 (x,w) → y로
-- [ ] qMultiFidelityKnowledgeGradient 획득 함수 적용
-- [ ] CVaR objective 통합
-- [ ] evaluate_on_w_set 함수로 평가 방식 변경
+#### 5. BoRisk 이론 재확인 필요 (Medium Priority)
+**질문**: 현재 구현이 BoRisk 논문과 일치하는가?
+- 실제 이미지 평가 vs GP posterior 샘플링
+- w_set 사용 방식이 맞는가?
 
-#### 2. 환경 변수 미통합 (CRITICAL)
-- `environment_independent.py` 구현되어 있으나 **optimization.py에서 전혀 사용 안 함**
-- GP가 (x, z) → y 학습하지 않고 x → y만 학습
-- BoRisk의 핵심인 환경 조건부 예측 누락
-- TODO: 환경 벡터를 w로 사용하여 GP 입력 구성
+**확인 필요**:
+- [ ] BoRisk 논문 Algorithm 1 다시 확인
+- [ ] BoTorch 튜토리얼과 비교
+- [ ] 필요시 수정
 
-#### 3. 평가 효율성 (CRITICAL)
-- 매번 113개 이미지 전체 평가 → 매우 느림
-- BoRisk는 매번 10~20개만 평가 → 10배 빠름
-- 현재 구조로는 실험 불가능 (시간 초과)
+### 📋 긴급 작업 우선순위 (2025.11.12)
 
-### 📋 다음 작업 우선순위
+#### Priority 1: 자동 라벨링 시스템 (최우선! 🚨)
+**목표**: AirLine 결과로 GT 자동 생성
+1. **auto_labeling.py 작성**
+   - AirLine_assemble_test.py 사용
+   - 6개 점 (longi 4개 + collar 2개) 자동 추출
+   - ground_truth.json 포맷으로 저장
 
-#### Priority 1: BoRisk 알고리즘 구현 (Critical - 최우선)
-1. **w_set 샘플링 시스템 구축**
-   - 모든 이미지의 환경 벡터 사전 추출
-   - sample_w_set() 함수 구현 (n_w=15개)
-   - 인덱스 추적 시스템
+2. **labeling_tool.py 수정**
+   - 자동 생성 GT 불러오기
+   - 수동 수정 인터페이스
 
-2. **GP 모델 구조 변경**
-   - AppendFeatures input_transform 적용
-   - (x, w) → y 학습 구조로 변경
-   - train_X: [N, 9], train_Y: [N*n_w, 1]
+**예상 소요**: 1-2시간
+**마감**: 오늘 중
 
-3. **qMFKG 획득 함수 구현**
-   - qMultiFidelityKnowledgeGradient import
-   - CVaR objective 함수 작성
-   - 판타지 샘플링 설정
+#### Priority 2: 환경/alpha 실험 (High)
+**목표**: 최적 하이퍼파라미터 찾기
+1. **alpha 실험**
+   ```bash
+   python optimization.py --alpha 0.1 --iterations 10
+   python optimization.py --alpha 0.2 --iterations 10
+   python optimization.py --alpha 0.3 --iterations 10
+   python optimization.py --alpha 0.4 --iterations 10
+   python optimization.py --alpha 0.5 --iterations 10
+   ```
 
-4. **평가 함수 분리**
-   - evaluate_on_w_set() 함수 구현
-   - objective_function()은 초기화 단계만 사용
-   - BO 루프에서 w_set만 평가
+2. **n_w 실험**
+   ```bash
+   python optimization.py --n_w 10 --iterations 10
+   python optimization.py --n_w 15 --iterations 10
+   python optimization.py --n_w 20 --iterations 10
+   python optimization.py --n_w 30 --iterations 10
+   ```
 
-#### Priority 2: 환경 벡터 통합 (High)
-- environment_independent.py 연동
-- 이미지별 환경 특징 추출 및 저장
-- GP 입력으로 환경 벡터 사용
+**예상 소요**: 실험당 30분-1시간
+**마감**: 오늘 저녁
 
-#### Priority 3: 실험 및 검증 (Medium)
-- 소규모 테스트 (n_initial=5, iterations=10)
-- CVaR 값 모니터링 및 개선 확인
-- 전체 실험 실행
+#### Priority 3: 시각화 및 분석 (High)
+**목표**: 논문 Figure 생성
+1. **visualization.py 작성**
+   - 초기/중간/최종 선 검출 결과
+   - CVaR 개선 추이 그래프
+   - alpha별 성능 비교
+
+2. **분석**
+   - CVaR vs Mean 히스토그램
+   - 환경별 성능 분포
+   - 실패 케이스 분석
+
+**예상 소요**: 2-3시간
+**마감**: 오늘 밤
+
+#### Priority 4: 메트릭 검증 (Medium)
+**목표**: 현재 메트릭 문제 확인
+1. **테스트 케이스 작성**
+   - 다양한 실패 상황 시뮬레이션
+   - 메트릭 응답 확인
+
+2. **필요시 수정**
+   - 거리 패널티 조정
+   - 방향 가중치 조정
+
+**예상 소요**: 1시간
+**우선순위**: 시간 있으면
+
+#### Priority 5: RANSAC 가중치 재검토 (Low)
+**목표**: 가중치 이해 오류 확인
+- full_pipeline.py 재검토
+- 필요시 수정
+
+**우선순위**: 나중에 (시간 있으면)
 
 ---
 
 ## 🚀 빠른 실행 명령어
 
-### 워크스테이션 환경
-- 경로: `/home/jeongho/projects/graduate/BO_optimization`
-- Python: 3.11.14 (weld2024_mk2 환경)
-- GPU: CUDA 12.4 available
-- 데이터셋: `../dataset/images/test/` (113장 실제 사용)
+### Windows 로컬 환경 (현재)
+- 경로: `C:\Users\user\Desktop\study\task\graduate\graduate_master\BO_optimization`
+- Python: 3.12.0 (weld2024_mk2 conda 환경)
+- 상태: 실행 가능 ✓
+- 데이터셋: `dataset/images/test/` (119장)
+- 주의: 코드 복붙 상태 (정리 필요)
 
 ```bash
-# 디버그 테스트 (빠른 검증)
-python optimization.py --iterations 2 --n_initial 3 --alpha 0.3
+# conda 환경 활성화
+conda activate weld2024_mk2
 
-# 소규모 테스트 (BoRisk 검증용)
-python optimization.py --iterations 10 --n_initial 5 --alpha 0.3
+# 작업 디렉토리
+cd C:/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
 
-# 표준 실행 (20회)
+# 빠른 테스트 (2개 이미지)
+python optimization.py --iterations 1 --n_initial 1 --alpha 0.3 --max_images 2
+
+# alpha 실험 (각 10 iterations)
+python optimization.py --alpha 0.1 --iterations 10 --n_initial 5
+python optimization.py --alpha 0.2 --iterations 10 --n_initial 5
+python optimization.py --alpha 0.3 --iterations 10 --n_initial 5
+python optimization.py --alpha 0.4 --iterations 10 --n_initial 5
+python optimization.py --alpha 0.5 --iterations 10 --n_initial 5
+
+# n_w 실험
+python optimization.py --n_w 10 --iterations 10 --n_initial 5
+python optimization.py --n_w 15 --iterations 10 --n_initial 5
+python optimization.py --n_w 20 --iterations 10 --n_initial 5
+python optimization.py --n_w 30 --iterations 10 --n_initial 5
+
+# 전체 실험 (최종)
 python optimization.py --iterations 20 --n_initial 10 --alpha 0.3
 
-# 전체 실행 (30회)
-python optimization.py --iterations 30 --n_initial 15 --alpha 0.2
-
-# 백그라운드 실행 (로그 저장)
-nohup python optimization.py --iterations 20 --n_initial 10 --alpha 0.3 > experiment.log 2>&1 &
-
-# 실행 상태 확인
-tail -f experiment.log
-ps aux | grep "python.*optimization.py"
-
 # 결과 확인
-ls -lh results/
-cat logs/iter_*.json | tail -20
+dir results\
+type logs\iter_*.json
 ```
+
+### Linux 워크스테이션 (포기)
+- 상태: Segmentation fault ❌
+- 원인: CRG311 라이브러리 의존성 문제
+- 결정: Windows로 회귀
 
 ---
 
@@ -453,5 +522,30 @@ md5sum -c file_hashes.txt
 
 ---
 
-**마지막 업데이트: 2025.11.11 20:30**
+**마지막 업데이트: 2025.11.12 22:35**
+**🚨 긴급 상황: 오늘까지 실험 결과 필요**
 **다음 세션 시작 시 반드시 NEXT_SESSION.md를 먼저 읽으세요!**
+**최우선 작업: 자동 라벨링 시스템 구축!**
+
+---
+
+## 🚨 긴급 메모 (2025.11.12)
+
+### 현재 상황
+- **마감**: 오늘 (졸업 마감)
+- **환경**: Windows 로컬 (Linux 포기)
+- **상태**: 기본 실행 가능, 분석 및 개선 필요
+
+### 오늘 해야 할 일 (우선순위)
+1. ✅ **자동 라벨링** (auto_labeling.py)
+2. ✅ **실험 돌리기** (alpha, n_w 조합)
+3. ✅ **시각화** (Figure 생성)
+4. ✅ **분석** (CVaR vs Mean, 메트릭 검증)
+
+### 성공 기준
+- [ ] 자동 라벨링 시스템 완성
+- [ ] 최소 5개 실험 조합 완료
+- [ ] 논문용 Figure 3개 이상
+- [ ] 결과 분석 완료
+
+**화이팅! 졸업하자! 🎓**

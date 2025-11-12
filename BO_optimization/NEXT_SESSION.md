@@ -1,238 +1,385 @@
-# 다음 세션 시작 가이드
+# 🚨 긴급 세션 가이드 - 2025-11-12
 
-**날짜**: 2025-11-11 21:35
-**이전 세션**: Windows 경로 문제 발견 및 일부 수정
-
----
-
-## ✅ **핵심 발견: 문제는 경로였습니다!**
-
-### 근본 원인
-AirLine_assemble_test.py는 **Windows의 samsung2024 프로젝트**에서 작성된 코드입니다.
-- 현재 시스템에는 `samsung2024/` 디렉토리가 없음
-- 모든 경로가 `./YOLO_AirLine/...` 형태로 하드코딩됨
-- `C:\Users\user\Desktop\...` 같은 Windows 경로도 있음
-
-**결과**: Import는 성공하지만, 실행 시 파일을 찾지 못해 crash 발생
+**상황**: 오늘까지 실험 결과를 내지 못하면 졸업 불가
+**환경**: Windows 로컬 (리눅스 segfault로 회귀, 코드 복붙 사용 중)
+**현재 상태**: 실험은 실행되나 결과 분석 및 개선 필요
 
 ---
 
-## ✅ 성공한 것
+## ✅ 완료된 작업 (이전 세션)
 
-### 1. 개별 컴포넌트 테스트 ✅
-- CRG311.desGrow(): 정상 작동
-- DexiNed 모델: 정상 작동
-- Import: 모두 성공
+### 1. Repository Clone 및 경로 수정 완료 ✓
+- 위치: `C:\Users\user\Desktop\study\task\graduate\graduate_master`
+- `test_clone_final.py` 모든 하드코딩 경로 수정
+- Windows 경로 → `__file__` 기준 절대 경로로 변경
 
-### 2. minimal_test.py 성공 ✅
-```bash
-python minimal_test.py
-# → CVaR=0.0000 (정상 실행!)
+### 2. 실험 실행 확인 ✓
+- Windows 로컬 환경에서 무난하게 실행됨
+- 기본적인 BO-CVaR 최적화 작동 확인
+
+---
+
+## 🎯 오늘의 최우선 작업 순서
+
+### Priority 1: 자동 라벨링 시스템 구축 (최우선!)
+
+**목표**: AirLine_assemble_test.py 결과로 GT 자동 생성
+
+#### 작업 단계:
+1. **자동 라벨링 스크립트 작성**
+   ```python
+   # auto_labeling.py 생성
+   # AirLine_assemble_test.py 사용하여 6개 점 추출
+   # ground_truth.json 포맷으로 저장
+   ```
+
+2. **출력 포맷**
+   ```json
+   {
+     "image_name": {
+       "coordinates": {
+         "longi_left_lower_x": 0, "longi_left_lower_y": 0,
+         "longi_right_lower_x": 0, "longi_right_lower_y": 0,
+         "longi_left_upper_x": 0, "longi_left_upper_y": 0,
+         "longi_right_upper_x": 0, "longi_right_upper_y": 0,
+         "collar_left_lower_x": 0, "collar_left_lower_y": 0,
+         "collar_left_upper_x": 0, "collar_left_upper_y": 0
+       }
+     }
+   }
+   ```
+
+3. **labeling_tool.py 연동**
+   - 자동 생성된 GT를 수동으로 수정 가능하게
+   - 기존 labeling_tool.py에 불러오기 기능 추가
+
+#### 구현 위치:
+```
+BO_optimization/
+├── auto_labeling.py          # 새로 생성
+├── labeling_tool.py           # 기존 파일 수정
+└── dataset/
+    ├── ground_truth.json      # 기존
+    └── ground_truth_auto.json # 자동 생성
 ```
 
-**위치**: `/home/jeongho/projects/graduate/BO_optimization/minimal_test.py`
+---
 
-**의미**:
-- objective_function 자체는 정상 작동
-- AirLine 라인 검출 파이프라인 정상
-- BoRisk 알고리즘 로직 OK
+### Priority 2: 환경 변수 조정 실험
 
-### 3. 일부 경로 수정 완료 ✅
-- L47: Windows 빌드 경로 주석 처리
-- L128-129: MLP_MODEL_PATH = None
-- L34-53: Optional imports에 try-except 추가
-- L719-727: 카메라 파라미터 경로 __file__ 기준으로 변경
-- L1600-1603: samsung2024 체크 제거
+**현재 문제**: 환경 벡터가 최적화에 제대로 반영되는가?
+
+#### 실험 계획:
+1. **환경 샘플링 방식 변경**
+   - 현재: 랜덤 샘플링
+   - 개선: Diverse sampling (k-means clustering)
+
+2. **n_w 값 조정**
+   ```bash
+   # 현재: n_w=15
+   python optimization.py --n_w 10 --iterations 10
+   python optimization.py --n_w 20 --iterations 10
+   python optimization.py --n_w 30 --iterations 10
+   ```
+
+3. **alpha 값 실험**
+   ```bash
+   # 현재: alpha=0.3 (worst 30%)
+   python optimization.py --alpha 0.2  # worst 20%
+   python optimization.py --alpha 0.4  # worst 40%
+   python optimization.py --alpha 0.5  # worst 50%
+   ```
 
 ---
 
-## ❌ 아직 해결되지 않은 것
+### Priority 3: RANSAC 가중치 수정
 
-### 1. optimization.py 직접 실행 실패
-```bash
-python optimization.py --iterations 1 --n_initial 1 --alpha 0.3
-# → 출력 없음 또는 segfault
-```
+**문제 발견**: Claude가 RANSAC 가중치를 잘못 이해한 듯
 
-**가능한 원인**:
-- argparse 처리 중 문제
-- main 실행 흐름의 어딘가에서 잘못된 경로 참조
-- 초기화 순서 문제
-
-### 2. 여러 파일에 남아있는 경로 문제
-AirLine_assemble_test.py와 관련된 다른 파일들:
-- `abs_6_dof.py` ← 이것도 Windows 경로 있을 가능성 높음
-- `run_inference.py`
-- `pendant_inference.py`
-- `run_metric.py`
-
----
-
-## 🚀 다음 세션 즉시 할 일
-
-### Step 1: 모든 하드코딩 경로 찾기 (최우선!)
-
-```bash
-cd /home/jeongho/projects/graduate/YOLO_AirLine
-
-# Windows 경로 찾기
-grep -rn "C:\\\\" . --include="*.py" | grep -v ".pyc"
-grep -rn "r\"C:" . --include="*.py"
-
-# samsung2024 참조 찾기
-grep -rn "samsung" . --include="*.py" | grep -v ".pyc"
-
-# YOLO_AirLine 상대 경로 찾기
-grep -rn "\./YOLO_AirLine\|'YOLO_AirLine'" . --include="*.py"
-
-# 기타 의심스러운 경로
-grep -rn "Desktop\|Users" . --include="*.py"
-```
-
-### Step 2: 모든 경로를 __file__ 기준 절대 경로로 변경
-
-**예시**:
+#### 현재 구현 (optimization.py:332-340):
 ```python
-# ❌ 나쁜 예
-camera_matrix = np.load('./YOLO_AirLine/pose_estimation.../camera_matrix.npy')
-
-# ✅ 좋은 예
-base_dir = os.path.dirname(os.path.abspath(__file__))
-cam_file = os.path.join(base_dir, "pose_estimation_code_and_camera_matrix",
-                        "camera_parameters", "camera_matrix_filtered.npy")
-camera_matrix = np.load(cam_file)
+w_center = float(params.get('ransac_center_w', 0.5))
+w_length = float(params.get('ransac_length_w', 0.5))
+w_consensus = int(params.get('ransac_consensus_w', 5))
 ```
 
-### Step 3: abs_6_dof.py 등 관련 파일 수정
+#### 수정 필요 사항:
+1. **가중치 범위 재검토**
+   - `ransac_center_w`: [0.0, 1.0] → 적절한가?
+   - `ransac_length_w`: [0.0, 1.0] → 적절한가?
+   - `ransac_consensus_w`: [1, 10] → 적절한가?
 
+2. **가중치 정규화**
+   - center + length = 1.0 제약 필요한가?
+   - consensus는 곱셈 가중치로 사용
+
+3. **실험**
+   ```bash
+   # 극단적인 값으로 테스트
+   # center 중시
+   python optimization.py --iterations 5 --n_initial 3
+
+   # length 중시
+   python optimization.py --iterations 5 --n_initial 3
+   ```
+
+---
+
+### Priority 4: 시각화 - 초기/중간/최종 선 검출 결과
+
+**목표**: 최적화 과정 시각화로 논문 Figure 생성
+
+#### 필요한 시각화:
+1. **초기 (iteration 0)**
+   - 검출된 선
+   - GT 선
+   - 평가 점수
+
+2. **중간 (iteration 10)**
+   - 검출된 선
+   - GT 선
+   - 평가 점수
+   - 개선 추이
+
+3. **최종 (best iteration)**
+   - 검출된 선
+   - GT 선
+   - 평가 점수
+   - 최종 개선율
+
+#### 구현:
+```python
+# visualization.py 생성
+def save_detection_comparison(iteration, params, detected, gt, score):
+    # 3개 subplot: 초기 / 중간 / 최종
+    # 선 검출 결과 오버레이
+    # 점수 표시
+```
+
+---
+
+## 🔍 분석 포인트 (중요!)
+
+### 1. 메트릭 재검토 필요
+
+**의문**: 현재 메트릭이 실패 상황을 제대로 반영하는가?
+
+#### 현재 메트릭 (line_equation_evaluation):
+- 방향 유사도 (60%)
+- 평행 거리 (40%)
+
+#### 검토 사항:
+- 선이 아예 검출 안 되면? → 0점 처리 맞나?
+- 방향은 맞는데 위치가 크게 틀리면? → 거리 패널티 충분한가?
+- GT가 없는 경우는? → 현재 skip
+
+#### 실험:
+```python
+# 다양한 실패 케이스로 메트릭 테스트
+test_cases = [
+    ("완전 실패", detected=None, expected_score=0.0),
+    ("방향만 맞음", detected=parallel_but_far, expected_score=?),
+    ("위치만 맞음", detected=nearby_but_perpendicular, expected_score=?),
+]
+```
+
+---
+
+### 2. CVaR vs 평균 분석
+
+**관찰**: 평균이 CVaR을 그대로 추종한다
+
+#### 가설:
+1. **데이터셋이 균질적이다**
+   - 환경 변화가 크지 않음
+   - 모든 이미지가 비슷한 난이도
+
+2. **alpha가 너무 크다** (0.3)
+   - worst 30% → 샘플이 많아서 평균과 비슷
+   - alpha를 줄여서 극단치만 보면 차이가 날 수도
+
+3. **메트릭 문제**
+   - 실패 케이스를 제대로 구분 못함
+   - 모든 이미지가 비슷한 점수대
+
+#### 실험:
 ```bash
-# 각 파일 확인
-cat /home/jeongho/projects/graduate/YOLO_AirLine/abs_6_dof.py | grep -E "\.load|\.pth|\.pt|C:\\\\"
-cat /home/jeongho/projects/graduate/YOLO_AirLine/run_inference.py | grep -E "\.load|\.pth|\.pt|C:\\\\"
+# alpha 조정 실험
+python optimization.py --alpha 0.1 --iterations 10  # worst 10%
+python optimization.py --alpha 0.5 --iterations 10  # worst 50%
+
+# 결과 비교
+# - CVaR vs Mean 차이 분석
+# - 히스토그램 그려보기
 ```
 
-### Step 4: optimization.py 테스트
+---
 
+### 3. GP 샘플링 vs 실제 평가
+
+**BoRisk 핵심**: 실제 데이터를 쓰는 게 아니라 GP 샘플링 사용
+
+#### 현재 구현:
+- w_set 샘플링: 실제 이미지 인덱스 사용
+- 평가: 실제 이미지로 평가
+
+#### BoRisk 이론:
+- w_set 샘플링: 환경 벡터만 샘플링
+- 평가: **GP posterior에서 샘플링** (실제 평가 아님!)
+- 장점: 실제로 없는 환경도 테스트 가능
+
+#### 수정 필요 여부 검토:
+```python
+# 현재 (optimization.py:283-327)
+def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
+    # 실제 이미지 평가
+    for idx in w_indices:
+        img_data = images_data[idx]
+        score = detect_and_evaluate(img_data)
+```
+
+**질문**: 이게 맞나? BoRisk 논문 다시 확인 필요
+
+---
+
+## 🐛 기술적 이슈
+
+### 1. 환경 문제
+
+#### Linux Workstation (실패):
+- Segmentation fault 발생
+- 원인: CRG311 라이브러리 의존성 문제
+- 상태: 포기, Windows로 회귀
+
+#### Windows Local (현재):
+- 실행 가능
+- 코드 복붙 사용 중 (깔끔하지 않음)
+- Git 브랜치 분리 필요
+
+### 2. Git 관리
+
+**현재 상황**:
+- Linux 수정사항: 경로 문제 해결
+- Windows 환경: 별도 코드 복붙
+- 걱정: 브랜치 분리하면 경로 충돌 가능
+
+**제안**:
 ```bash
-cd /home/jeongho/projects/graduate/BO_optimization
+# Windows 브랜치 생성
+git checkout -b windows-local
 
-# 짧은 테스트
-python optimization.py --iterations 2 --n_initial 2 --alpha 0.3
+# Linux 수정사항 선택적으로 merge
+git cherry-pick <경로 수정 커밋들>
 
-# 성공 시 → 본격 실험
-python optimization.py --iterations 20 --n_initial 15 --alpha 0.3
+# 또는 이번 세션 md만 업데이트
+git checkout main
+# NEXT_SESSION.md, Claude.md만 수정
+git add *.md
+git commit -m "docs: Update session guide with urgent tasks"
+git push origin main
 ```
 
 ---
 
-## 📂 수정된 파일 목록
+## 🚀 빠른 시작 명령어
 
-### 완전히 수정됨
-1. `/home/jeongho/projects/graduate/YOLO_AirLine/AirLine_assemble_test.py`
-   - L47: Windows 경로 주석
-   - L34-53: Optional imports
-   - L128-129: MLP_MODEL_PATH = None
-   - L719-727: 카메라 파라미터 경로 수정
-   - L1600-1603: samsung2024 체크 제거
-
-### 추가 수정 필요 (의심)
-2. `/home/jeongho/projects/graduate/YOLO_AirLine/abs_6_dof.py`
-3. `/home/jeongho/projects/graduate/YOLO_AirLine/run_inference.py`
-4. `/home/jeongho/projects/graduate/YOLO_AirLine/pendant_inference.py`
-5. `/home/jeongho/projects/graduate/YOLO_AirLine/run_metric.py`
-
----
-
-## 🧪 테스트 체크리스트
-
-### 빠른 검증
-- [ ] `python minimal_test.py` 성공 (이미 성공!)
-- [ ] `python optimization.py --iterations 1 --n_initial 1 --alpha 0.3` 성공
-- [ ] CVaR > 0.01 확인
-
-### 전체 실험
-- [ ] `python optimization.py --iterations 5 --n_initial 5 --alpha 0.3`
-- [ ] 로그 파일 생성 확인
-- [ ] CVaR 개선 추이 확인
-
-### 최종 실험
-- [ ] `python optimization.py --iterations 20 --n_initial 15 --alpha 0.3`
-- [ ] 결과 JSON 저장 확인
-- [ ] 시각화 생성
-
----
-
-## 💡 핵심 교훈
-
-1. **경로는 항상 __file__ 기준 절대 경로로**
-   - Windows ↔ Linux 포팅 시 필수
-   - `os.path.dirname(os.path.abspath(__file__))` 사용
-
-2. **작업 디렉토리 가정하지 말 것**
-   - `./YOLO_AirLine/...` ← 현재 디렉토리 의존
-   - 어디서 실행하든 작동하도록 설계
-
-3. **CRG311 segfault는 빨간 청어였음**
-   - CPU 강제 모드: 필요 없었음
-   - 재컴파일: 필요 없었음
-   - **단순히 파일을 못 찾아서 crash했을 가능성 높음**
-
----
-
-## 📊 현재 상태
-
-### 작동하는 것 ✅
-- Import: 100% 성공
-- CRG311: 정상
-- DexiNed: 정상
-- objective_function: 정상 (minimal_test.py로 확인)
-- BoRisk 알고리즘 로직: 정상
-
-### 작동하지 않는 것 ❌
-- optimization.py 직접 실행
-- 이유: 아마도 남아있는 경로 문제
-
----
-
-## 🎯 목표
-
-**Primary Goal**: 경로 문제 완전 해결
-**Success Criteria**:
-- [ ] optimization.py가 정상 실행
-- [ ] CVaR 값 계산 성공
-- [ ] 전체 최적화 루프 완료
-
-**Time Estimate**: 30분 ~ 1시간
-- 경로 검색: 10분
-- 수정: 20분
-- 테스트: 10-30분
-
----
-
-## 📝 빠른 시작 명령어
-
+### 환경 설정
 ```bash
-cd /home/jeongho/projects/graduate/BO_optimization
+# conda 환경 활성화
+conda activate weld2024_mk2
 
-# 1. minimal test (이미 성공 확인됨)
-python minimal_test.py
+# 작업 디렉토리
+cd C:/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
+```
 
-# 2. 경로 문제 찾기
-cd ../YOLO_AirLine
-grep -rn "C:\\\\" . --include="*.py" | head -20
-grep -rn "\./YOLO_AirLine" . --include="*.py" | head -20
+### 1. 자동 라벨링 (최우선)
+```bash
+# 아직 없음 - 이번 세션에서 작성 필요
+python auto_labeling.py --image_dir dataset/images/test --output dataset/ground_truth_auto.json
+```
 
-# 3. optimization.py 테스트
-cd ../BO_optimization
-python optimization.py --iterations 1 --n_initial 1 --alpha 0.3
+### 2. 빠른 실험
+```bash
+# 환경 변수 실험
+python optimization.py --n_w 20 --alpha 0.2 --iterations 5 --n_initial 3
 
-# 4. 성공 시 본격 실험
-python optimization.py --iterations 20 --n_initial 15 --alpha 0.3
+# RANSAC 가중치 실험
+python optimization.py --iterations 5 --n_initial 3
+```
+
+### 3. 전체 실험
+```bash
+# 최종 실험
+python optimization.py --iterations 20 --n_initial 10 --alpha 0.3
+```
+
+### 4. 시각화
+```bash
+# 아직 없음 - 이번 세션에서 작성 필요
+python visualization.py --results results/bo_cvar_*.json
 ```
 
 ---
 
-**마지막 업데이트**: 2025-11-11 21:40
-**다음 세션 첫 작업**: Windows 경로 전체 검색 및 수정
-**예상 소요 시간**: 30-60분
-**성공 확률**: 90% 이상 (경로만 고치면 됨!)
+## 📊 성공 기준
+
+### 오늘 달성해야 할 것:
+1. ✅ 자동 라벨링 시스템 완성
+2. ✅ 다양한 alpha/n_w 조합 실험 (최소 5개)
+3. ✅ 시각화 Figure 생성 (초기/중간/최종)
+4. ✅ 메트릭 분석 및 문제점 파악
+5. ✅ CVaR vs Mean 분석 결과
+
+### 논문용 Figure:
+- Figure 1: 최적화 과정 (초기 → 중간 → 최종)
+- Figure 2: CVaR 개선 추이 그래프
+- Figure 3: alpha별 성능 비교
+- Figure 4: 환경별 성능 분석
+
+---
+
+## 💡 AirLine 저자들은 바보인 듯
+
+**관찰된 문제점**:
+1. Windows 경로 하드코딩
+2. 상대 경로 가정 (재현성 낮음)
+3. 문서화 부족
+4. 의존성 관리 엉망
+
+**우리의 개선**:
+1. ✅ __file__ 기준 절대 경로
+2. ✅ 환경 독립적인 코드
+3. ✅ 상세한 문서화 (이 파일!)
+4. 🔄 conda 환경 명세 (TODO)
+
+---
+
+## 📝 다음 세션 TODO
+
+### 즉시 시작:
+- [ ] auto_labeling.py 작성
+- [ ] labeling_tool.py 수정
+- [ ] visualization.py 작성
+
+### 실험:
+- [ ] alpha [0.1, 0.2, 0.3, 0.4, 0.5] 실험
+- [ ] n_w [10, 15, 20, 30] 실험
+- [ ] 메트릭 테스트 케이스 작성
+
+### 분석:
+- [ ] CVaR vs Mean 히스토그램
+- [ ] 환경별 성능 분포
+- [ ] 실패 케이스 분석
+
+### 문서:
+- [ ] 실험 결과 정리
+- [ ] Figure 생성
+- [ ] 논문 초안 작성
+
+---
+
+**마지막 업데이트**: 2025-11-12 22:30
+**다음 세션**: 자동 라벨링부터 시작!
+**Time Pressure**: 🚨 오늘 안에 결과 필요!
+
+**화이팅! 졸업하자! 🎓**
