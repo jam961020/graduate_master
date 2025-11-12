@@ -556,7 +556,7 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
             # BoRisk Knowledge Gradient 사용
             candidate, acq_value, acq_name = optimize_borisk(
                 gp, w_set, BOUNDS, alpha=alpha,
-                use_full_kg=False  # 빠른 버전 사용 (True면 정확한 버전)
+                use_full_kg=True  # 정확한 BoRisk-KG 사용 (판타지 관측)
             )
             print(f"  Using {acq_name}: acq_value={acq_value:.4f}")
             acq_value = torch.tensor(acq_value) if not torch.is_tensor(acq_value) else acq_value

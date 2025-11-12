@@ -148,17 +148,18 @@ class BoRiskAcquisition:
     def optimize(self, bounds, n_candidates=100):
         """
         획득 함수 최적화
-        
+
         Args:
-            bounds: 파라미터 경계 [2, 9]
+            bounds: 파라미터 경계 [2, param_dim]
             n_candidates: 후보 수
-            
+
         Returns:
-            best_x: 최적 파라미터 [1, 9]
+            best_x: 최적 파라미터 [1, param_dim]
             best_kg: KG 값
         """
         # 랜덤 후보 생성
-        candidates = torch.rand(n_candidates, 9, dtype=self.dtype, device=self.device)
+        param_dim = bounds.shape[1]  # bounds의 dimension을 동적으로 가져옴
+        candidates = torch.rand(n_candidates, param_dim, dtype=self.dtype, device=self.device)
         candidates = bounds[0] + (bounds[1] - bounds[0]) * candidates
         
         # 각 후보의 KG 계산
