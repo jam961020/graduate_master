@@ -11,7 +11,12 @@
       "Bash(tee:*)",
       "Bash(python auto_labeling.py:*)",
       "Bash(python analyze_results.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "WebFetch(domain:arxiv.org)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.arxiv-vanity.com)",
+      "WebFetch(domain:ar5iv.labs.arxiv.org)"
     ],
     "deny": [],
     "ask": []

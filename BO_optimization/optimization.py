@@ -620,6 +620,12 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
             print(f"  Using {acq_name}: selected w_idx={w_idx}, acq_value={acq_value:.4f}")
             acq_value = torch.tensor(acq_value) if not torch.is_tensor(acq_value) else acq_value
 
+            # BoRisk KG 계산 후 메모리 해제 (36번 iteration 문제 해결)
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            import gc
+            gc.collect()
+
         except ImportError as e:
             print(f"\n⚠️ BoRisk KG import failed: {e}, falling back to UCB...")
 
@@ -669,13 +675,100 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         # Shape 맞추기: [1] -> [1, 1]
         new_score = new_score.unsqueeze(-1) if new_score.dim() == 1 else new_score
 
-        # 단일 평가이므로 CVaR은 그 값 자체 (진짜 CVaR은 GP로 추정해야 함)
-        new_cvar = new_score.item()
-
         # 5.4: 정규화
         new_score_normalized = (new_score - Y_mean) / (Y_std + 1e-6)
 
-        # 5.5: 로그 저장
+        # 5.5: 단일 (x, w) 쌍만 추가! (진짜 BoRisk!)
+        x_w = torch.cat([candidate[0], w_set[w_idx]]).unsqueeze(0)  # [1, 15]
+        train_X_full = torch.cat([train_X_full, x_w])
+        train_X_params = torch.cat([train_X_params, candidate])
+        train_Y = torch.cat([train_Y, new_score])
+        train_Y_normalized = torch.cat([train_Y_normalized, new_score_normalized])
+
+        # 5.7: GP 재학습 (메모리 절약: 5번마다만 재학습)
+        # 36번 iteration 문제 해결을 위한 최적화
+        should_refit = (iteration % 5 == 0) or (iteration < 10)  # 초반에는 매번, 이후에는 5번마다
+
+        if should_refit:
+            try:
+                # Old GP 모델 메모리 해제
+                if 'gp' in locals():
+                    del gp
+                if 'mll' in locals():
+                    del mll
+
+                gp = SingleTaskGP(
+                    train_X_full,
+                    train_Y_normalized
+                )
+                mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
+                fit_gpytorch_mll(mll)
+
+                # GP 재학습 후 메모리 해제
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                import gc
+                gc.collect()
+
+            except Exception as e:
+                print(f"  ⚠️ GP refit failed: {e}")
+                # 노이즈 추가 후 재시도
+                train_Y_normalized = train_Y_normalized + 0.01 * torch.randn_like(train_Y_normalized)
+                gp = SingleTaskGP(
+                    train_X_full,
+                    train_Y_normalized
+                )
+                mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
+                fit_gpytorch_mll(mll)
+        else:
+            # GP 재학습 생략, 데이터만 업데이트
+            print(f"  [GP] Skipping refit (iteration {iteration+1}), using cached model")
+
+        # 5.8: GP posterior로 진짜 CVaR 계산! (BoRisk 핵심!)
+        # ⭐ 중요: 현재 candidate가 아니라 **current best x**의 CVaR을 계산!
+        # KG는 탐험을 위해 나쁜 점도 평가하므로, candidate의 CVaR이 아니라
+        # 현재까지의 best x의 CVaR을 추적해야 함!
+
+        with torch.no_grad():
+            # 현재까지 평가한 모든 x에 대해 CVaR 계산 → best 선택
+            all_cvars = []
+            for x_param in train_X_params:
+                # 각 x에 대해 모든 환경 w에서 GP 예측
+                x_expanded = x_param.unsqueeze(0).expand(n_w, -1)  # [n_w, 9]
+                xw_all_envs = torch.cat([x_expanded, w_set], dim=-1)  # [n_w, 15]
+
+                # GP posterior 예측 (정규화된 값)
+                posterior = gp.posterior(xw_all_envs)
+                predicted_scores_normalized = posterior.mean.squeeze(-1)  # [n_w]
+
+                # 역정규화
+                predicted_scores = predicted_scores_normalized * (Y_std + 1e-6) + Y_mean
+
+                # CVaR 계산: worst α% 평균
+                n_worst = max(1, int(n_w * alpha))
+                worst_scores, _ = torch.topk(predicted_scores, n_worst, largest=False)
+                cvar = worst_scores.mean().item()
+                all_cvars.append(cvar)
+
+            # Best CVaR 선택 (maximize!)
+            best_cvar_idx = np.argmax(all_cvars)
+            new_cvar = all_cvars[best_cvar_idx]
+            best_x = train_X_params[best_cvar_idx]
+
+            print(f"  [GP CVaR] Evaluated {len(train_X_params)} x candidates, "
+                  f"Best CVaR={new_cvar:.4f} (x_idx={best_cvar_idx})")
+
+            # CVaR 계산 후 메모리 해제 (36번 iteration 문제 해결)
+            del posterior, predicted_scores_normalized, predicted_scores, worst_scores
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            import gc
+            gc.collect()
+
+        # CVaR history에 추가
+        best_cvar_history.append(new_cvar)
+
+        # 5.9: 로그 저장 (CVaR 계산 후!)
         iter_log = {
             "iteration": iteration + 1,
             "acq_function": acq_name,
@@ -690,10 +783,10 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 "ransac_weight_q": float(candidate[0, 6].item()),
                 "ransac_weight_qg": float(candidate[0, 7].item()),
             },
-            "cvar": float(new_cvar),
-            "score": float(new_score.item()),  # 단일 값
-            "w_idx": int(w_idx),  # 선택된 환경 인덱스
-            "image_idx": int(selected_image_idx_val),  # 평가된 이미지 인덱스
+            "cvar": float(new_cvar),  # GP posterior로 계산된 진짜 CVaR!
+            "score": float(new_score.item()),  # 단일 (x,w) 평가 값
+            "w_idx": int(w_idx),
+            "image_idx": int(selected_image_idx_val),
             "n_w": n_w
         }
 
@@ -701,41 +794,31 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         with open(log_file, 'w') as f:
             json.dump(iter_log, f, indent=2)
 
-        # 5.6: 단일 (x, w) 쌍만 추가! (진짜 BoRisk!)
-        x_w = torch.cat([candidate[0], w_set[w_idx]]).unsqueeze(0)  # [1, 15]
-        train_X_full = torch.cat([train_X_full, x_w])
-        train_X_params = torch.cat([train_X_params, candidate])
-        train_Y = torch.cat([train_Y, new_score])
-        train_Y_normalized = torch.cat([train_Y_normalized, new_score_normalized])
-
-        best_cvar_history.append(new_cvar)
-
-        # 5.7: GP 재학습
-        try:
-            gp = SingleTaskGP(
-                train_X_full,
-                train_Y_normalized
-            )
-            mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
-            fit_gpytorch_mll(mll)
-        except Exception as e:
-            print(f"  ⚠️ GP refit failed: {e}")
-            # 노이즈 추가 후 재시도
-            train_Y_normalized = train_Y_normalized + 0.01 * torch.randn_like(train_Y_normalized)
-            gp = SingleTaskGP(
-                train_X_full,
-                train_Y_normalized
-            )
-            mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
-            fit_gpytorch_mll(mll)
-
-        # 5.8: 진행 상황 출력
+        # 5.10: 진행 상황 출력
         current_best = max(best_cvar_history)
         improvement = new_cvar - current_best if len(best_cvar_history) > 1 else 0.0
 
         print(f"Iter {iteration+1}/{n_iterations} ({acq_name}): CVaR={new_cvar:.4f}, Best={current_best:.4f} ({improvement:+.4f})")
 
-        # 5.9: 조기 종료 체크
+        # 5.11: 메모리 명시적 해제 (36번 iteration 문제 해결 - 강화!)
+        # Iteration 끝마다 사용하지 않는 tensor 명시적 삭제
+        del candidate, new_score, new_score_normalized, x_w
+        if 'acq_value' in locals():
+            del acq_value
+
+        # 강력한 메모리 해제
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        import gc
+        gc.collect()
+
+        # 10번마다 더 공격적인 메모리 정리
+        if (iteration + 1) % 10 == 0:
+            gc.collect()
+            gc.collect()  # 두 번 호출로 순환 참조 정리
+            print(f"  [Memory] Deep GC at iteration {iteration+1}")
+
+        # 5.12: 조기 종료 체크
         if iteration > 10:
             recent_improvements = [best_cvar_history[i] - best_cvar_history[i-1]
                                   for i in range(-5, 0)]
