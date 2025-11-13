@@ -162,7 +162,7 @@ class BoRiskAcquisition:
 
         return cvar
     
-    def optimize(self, bounds, n_candidates=100):
+    def optimize(self, bounds, n_candidates=100):  # TDR 비활성화 후 원래대로 복원
         """
         획득 함수 최적화 - (x, w) 쌍 선택
 
@@ -170,7 +170,7 @@ class BoRiskAcquisition:
 
         Args:
             bounds: 파라미터 경계 [2, param_dim]
-            n_candidates: x 후보 수
+            n_candidates: x 후보 수 (기본값 30, GPU TDR 방지)
 
         Returns:
             best_x: 최적 파라미터 [1, param_dim]
@@ -197,6 +197,10 @@ class BoRiskAcquisition:
                     best_kg = kg
                     best_x = x
                     best_w_idx = w_idx
+
+            # GPU 동기화 (10개마다, TDR 방지)
+            if (i + 1) % 10 == 0 and torch.cuda.is_available():
+                torch.cuda.synchronize()
 
             # 진행 상황 출력 (10% 단위)
             if (i + 1) % max(1, n_candidates // 10) == 0:

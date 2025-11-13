@@ -33,6 +33,15 @@ from environment_independent import extract_parameter_independent_environment
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DTYPE = torch.double
 
+# GPU 메모리 80% 제한 설정 (메모리 오버플로우 방지)
+if torch.cuda.is_available():
+    import os
+    torch.cuda.set_per_process_memory_fraction(0.8)
+    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
+    print("[GPU] Memory limited to 80%")
+    print(f"[GPU] Device: {torch.cuda.get_device_name(0)}")
+    print(f"[GPU] Total Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+
 # 8D: AirLine 파라미터 (6D) + RANSAC 가중치 (2D: Q, QG)
 BOUNDS = torch.tensor([
     [-23.0, 0.5, 0.01, -23.0, 0.5, 0.01, 1.0, 1.0],
@@ -392,6 +401,56 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
             scores.append(0.0)
 
     return torch.tensor(scores, dtype=DTYPE, device=DEVICE).unsqueeze(-1)
+
+
+def save_checkpoint(iteration, train_X_full, train_Y, best_cvar_history, checkpoint_dir):
+    """
+    체크포인트 저장 (5번마다)
+    프로세스가 종료되어도 중간부터 재시작 가능
+
+    Args:
+        iteration: 현재 iteration 번호
+        train_X_full: 학습 데이터 X (파라미터 + 환경)
+        train_Y: 학습 데이터 Y (스코어)
+        best_cvar_history: CVaR 히스토리
+        checkpoint_dir: 체크포인트 저장 디렉토리
+    """
+    checkpoint = {
+        'iteration': iteration,
+        'train_X_full': train_X_full.cpu().numpy().tolist(),
+        'train_Y': train_Y.cpu().numpy().tolist(),
+        'best_cvar_history': best_cvar_history,
+    }
+
+    checkpoint_file = checkpoint_dir / f"checkpoint_iter_{iteration:03d}.json"
+    with open(checkpoint_file, 'w') as f:
+        json.dump(checkpoint, f, indent=2)
+
+    print(f"  [Checkpoint] Saved at iteration {iteration}")
+
+
+def load_checkpoint(checkpoint_dir):
+    """
+    최신 체크포인트 로드
+
+    Args:
+        checkpoint_dir: 체크포인트 디렉토리
+
+    Returns:
+        checkpoint dict 또는 None
+    """
+    checkpoint_files = list(checkpoint_dir.glob("checkpoint_iter_*.json"))
+    if not checkpoint_files:
+        return None
+
+    # 최신 파일 선택 (modification time 기준)
+    latest = max(checkpoint_files, key=lambda p: p.stat().st_mtime)
+
+    with open(latest) as f:
+        checkpoint = json.load(f)
+
+    print(f"  [Checkpoint] Loaded from {latest.name}")
+    return checkpoint
 
 
 def compute_cvar_from_scores(scores, alpha=0.3):
@@ -785,11 +844,26 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
 
         print(f"Iter {iteration+1}/{n_iterations} ({acq_name}): CVaR={new_cvar:.4f}, Best={current_best:.4f} ({improvement:+.4f})")
 
-        # 5.11: 메모리 명시적 해제 (간소화 - 기본만)
+        # 5.11: 메모리 명시적 해제 (강화 버전 - 13번/36번 벽 통과)
+        # 매 iteration 끝: GPU 동기화 + 캐시 정리
         if torch.cuda.is_available():
+            torch.cuda.synchronize()  # GPU 연산 완료 대기
             torch.cuda.empty_cache()
         import gc
         gc.collect()
+
+        # 5번마다 더 강력한 메모리 정리 + 체크포인트 (Trial 2 성공 전략)
+        if (iteration + 1) % 5 == 0:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.reset_peak_memory_stats()  # GPU 메모리 통계 리셋
+            gc.collect()
+            gc.collect()  # 순환 참조 정리를 위해 두 번
+            print(f"  [Memory] Deep cleanup at iteration {iteration+1}")
+
+            # 체크포인트 저장 (프로세스 종료되어도 재시작 가능)
+            save_checkpoint(iteration + 1, train_X_full, train_Y,
+                          best_cvar_history, log_dir)
 
         # 5.12: 조기 종료 체크
         if iteration > 10:

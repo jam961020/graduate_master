@@ -16,12 +16,13 @@ def visualize_bo_exploration(result_file):
     
     # 데이터 추출
     history = np.array(data['history'])
+    best_params = data['best_params']
+
     if len(history) == 0:
         print('Empty history in result file:', result_file)
         return
     if len(history) == 1:
         history = np.array([history[0], history[0]])
-        best_params = data['best_params']
     
     # 전체 탐색 파라미터 로드 (파일에 저장되어 있어야 함)
     # 없으면 best_params만 사용
@@ -174,7 +175,7 @@ Best at iter:     {best_iter}
     # 저장
     save_path = Path(result_file).parent / f"{Path(result_file).stem}_exploration.png"
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
-    print(f"✓ Saved: {save_path}")
+    print(f"[OK] Saved: {save_path}")
     
     plt.show()
 

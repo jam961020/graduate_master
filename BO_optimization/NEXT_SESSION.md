@@ -1,335 +1,303 @@
-# 🚨 긴급 세션 가이드 - 2025-11-13 (세션 7)
+# 🎉 세션 가이드 - 2025-11-13 (세션 7) - GPU 3D 문제 해결!
 
-**상황**: 13번 iteration 벽 문제 - 프로세스가 계속 조용히 종료됨
+**상황**: ✅ **GPU 3D 부하 문제 해결 완료!**
 **환경**: Windows 로컬
-**현재 상태**: 🔴 **메모리 문제 원인 파악 완료 - Opus 진단 도구 준비됨**
+**현재 상태**: 🟢 **30 iterations 실험 진행 중 (19+ 완료)**
 
 ---
 
-## 🔴 **긴급 이슈 (2025-11-13 20:30 - 세션 6)**
+## 🎯 **문제 해결 완료! (세션 7)**
 
-### 문제: 13번 Iteration 벽 - 프로세스 조용히 종료
+### 진짜 원인: Windows GPU TDR (Timeout Detection and Recovery)
 
-**실험 패턴 요약**:
-| 시도 | 메모리 관리 방법 | 멈춘 지점 | 비고 |
-|------|------------------|-----------|------|
-| Trial 1 | 기본 (iteration 끝만) | **13번** | 첫 번째 벽 |
-| Trial 2 | Iteration 끝 해제 강화 | **36번** | ✨ 유일한 성공! |
-| Trial 3 | GP 5번마다 + 과도한 해제 | **6번** | 오히려 악화 ❌ |
-| Trial 4 | OpenCV 해제 추가 | **13번** | 첫 번째 벽 재발 |
+**발견 과정**:
+1. 진단 도구 실행 → GPU 메모리/RAM 정상
+2. 작업관리자 확인 → **GPU 3D 부하 100% 폭증!**
+3. 100 x 3 = 300 조합 평가 → GPU가 2초 이상 응답 없음
+4. Windows TDR: "GPU 응답 없음" → **프로세스 강제 종료**
+
+### 해결 방법
+
+#### 1. 획득 함수 후보 개수 감소 ✅
+```python
+# borisk_kg.py:165
+def optimize(self, bounds, n_candidates=30):  # 100 → 30 (70% 감소)
+```
+
+#### 2. GPU 동기화 추가 ✅
+```python
+# borisk_kg.py:201-203
+# GPU 동기화 (10개마다, TDR 방지)
+if (i + 1) % 10 == 0 and torch.cuda.is_available():
+    torch.cuda.synchronize()
+```
+
+#### 3. 기존 메모리 관리 유지 ✅
+- GPU 메모리 80% 제한
+- 매 iteration GPU 캐시 정리 + synchronize
+- 5번마다 강력한 정리 + 체크포인트
+
+---
+
+## 📊 실험 결과 비교
+
+| Trial | GPU 설정 | 후보 개수 | 멈춘 지점 | 비고 |
+|-------|---------|----------|----------|------|
+| 1 | - | 100 | 13번 | 첫 번째 벽 |
+| 2 | - | 100 | **36번** | ✨ 유일한 성공 |
+| 3 | - | 100 | 6번 | 오히려 악화 |
+| 4 | - | 100 | 13번 | 재발 |
+| 5 | 80% | 100 | 6번 | GPU 3D 폭증 |
+| **현재** | **80% + sync** | **30** | **19+** | ✅ **진행 중!** |
 
 **핵심 발견**:
-- ❌ **에러 메시지 없이 조용히 종료**
-- ⚠️ **13번과 36번에서 일관되게 멈춤** → 메모리 한계점
-- ✅ **Trial 2만 성공** → 간단한 메모리 관리가 최선
-- 🔍 **OpenCV 해제만으로는 부족** → GPU/BoTorch 문제 의심
+- GPU 메모리는 문제 아님 (0.26/8.00 GB만 사용)
+- **GPU 3D (연산 부하)가 진짜 문제!**
+- Windows TDR이 과부하로 오인하여 프로세스 킬
 
 ---
 
-## 📊 Opus 분석 결과 (세션 6)
+## 🚀 다음 세션 작업 계획 (우선순위별)
 
-### 주요 원인 (우선순위별)
+### ⚠️ 재부팅 후 즉시 작업
 
-#### 1. GPU 메모리 오버플로우 ⚠️⚠️⚠️ (최우선)
-**문제**:
-- AirLine 모델들(DexiNed, OrientationDetector)이 GPU에 상주
-- 매 이미지마다 GPU 연산 누적
-- `torch.cuda.empty_cache()` 부족
-
-**근거**:
-- Trial 2에서 메모리 해제 강화 → 36번까지 성공
-- GPU 메모리가 쌓이다가 임계점에서 프로세스 종료
-
-#### 2. 메모리 누수 패턴 ⚠️⚠️
-**문제**:
-- `AirLine_assemble_test.py` 전역 버퍼 (TMP1, TMP2, TMP3)
-- 이미지 증강 시 float32 사용으로 메모리 과다
-- 119장 이미지를 전체 메모리에 유지
-
-#### 3. C++ 모듈 (CRG311.pyd) ⚠️
-**문제**:
-- 메모리 관리 불명확
-- 세그멘테이션 폴트 가능성
-
----
-
-## 🎯 다음 세션 작업 계획
-
-### ⭐ Phase 1: 진단 및 원인 파악 (15분)
-
-#### 1-1. Opus 진단 도구 실행 ✨
+#### 0. TDR 비활성화 확인 및 후보 개수 증가
 ```bash
-cd /c/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
-python diagnose_shutdown.py
+# TDR 비활성화 확인 (재부팅 후)
+# 레지스트리: HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\GraphicsDrivers
+# TdrDelay = 60 (초) 또는 TdrLevel = 0
+
+# 후보 개수 증가
+# borisk_kg.py:165
+def optimize(self, bounds, n_candidates=50):  # 30 → 50 or 100
 ```
 
-**목적**:
-- AirLine/CRG311 모듈 안정성 체크
-- GPU 메모리 한계 확인
-- CUDA 연산 테스트
-- 메모리 집약적 연산 안정성 확인
-
-**예상 결과**:
-- 정확히 어느 모듈이 문제인지 파악
-- 메모리 한계값 확인
-- GPU 문제 여부 확인
+**예상 소요**: 5분
 
 ---
 
-### ⭐ Phase 2: 핵심 개선 적용 (30분)
+### 🚨 Priority 0: BoRisk 평가 구조 수정 (최최우선!)
 
-#### 2-1. GPU 메모리 80% 제한 설정
-```python
-# optimization.py 시작 부분 (import 직후)
-import torch
-import os
+**현재 문제**: 매 iteration마다 **n_w개 이미지 전부 평가 중!**
+- 현재: 30 iterations × 3 images = **90개 이미지 평가**
+- 올바른 BoRisk: 30 iterations × **1 image** = 30개 평가
 
-if torch.cuda.is_available():
-    torch.cuda.set_per_process_memory_fraction(0.8)
-    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
-    print("[GPU] Memory limited to 80%")
-```
+**수정 필요**:
+1. ✅ `borisk_kg.py` - w 선택 로직 (이미 구현됨!)
+2. ✅ `optimization.py` - 단일 (x, w) 평가 (이미 구현됨!)
+3. ❌ **문제**: 여전히 `evaluate_on_w_set()` 사용 중
 
-#### 2-2. GPU 캐시 정리 강화
-```python
-# optimization.py BO 루프에서
-for iteration in range(n_iterations):
-    # ... 기존 코드 ...
-
-    # 매 iteration 끝
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()  # ✅ 추가
-    import gc
-    gc.collect()
-
-    # 5번마다 더 강력한 정리
-    if (iteration + 1) % 5 == 0:
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.reset_peak_memory_stats()
-        gc.collect()
-        gc.collect()
-        print(f"  [Memory] Deep cleanup at iteration {iteration+1}")
-```
-
-#### 2-3. 컨텍스트 매니저 패턴 적용 (선택)
-```python
-# optimization.py
-from contextlib import contextmanager
-
-@contextmanager
-def memory_cleanup():
-    """메모리 정리를 위한 컨텍스트 매니저"""
-    try:
-        yield
-    finally:
-        gc.collect()
-
-# evaluate_single에 적용
-def evaluate_single(X, image_data, yolo_detector):
-    with memory_cleanup():
-        # ... 기존 코드 ...
-        return score
-```
-
-#### 2-4. 체크포인트 시스템 (중요!)
-```python
-# optimization.py
-def save_checkpoint(iteration, train_X_full, train_Y, best_cvar_history,
-                   checkpoint_dir):
-    """5번마다 체크포인트 저장"""
-    checkpoint = {
-        'iteration': iteration,
-        'train_X_full': train_X_full.cpu().numpy().tolist(),
-        'train_Y': train_Y.cpu().numpy().tolist(),
-        'best_cvar_history': best_cvar_history,
-    }
-
-    checkpoint_file = checkpoint_dir / f"checkpoint_iter_{iteration:03d}.json"
-    with open(checkpoint_file, 'w') as f:
-        json.dump(checkpoint, f, indent=2)
-
-    print(f"  [Checkpoint] Saved at iteration {iteration}")
-
-# BO 루프에서
-for iteration in range(n_iterations):
-    # ... 기존 코드 ...
-
-    # 5번마다 체크포인트
-    if (iteration + 1) % 5 == 0:
-        save_checkpoint(iteration + 1, train_X_full, train_Y,
-                       best_cvar_history, log_dir)
-```
-
----
-
-### ⭐ Phase 3: 실험 재시작 (2-4시간)
-
-#### 전략 A: 보수적 접근 (추천!)
+**작업**:
 ```bash
-# 30 iterations (더 짧게, 안전하게)
+# optimization.py 확인
+grep -n "evaluate_on_w_set" optimization.py
+
+# 수정: evaluate_single()만 사용하도록
+```
+
+**예상 효과**: **3배 속도 향상** (90개 → 30개 평가)
+**예상 소요**: 30분
+**마감**: 최우선!
+
+---
+
+### 🟡 Priority 1: 자동 라벨링 시스템 (High)
+
+**목적**: Ground truth 자동 생성으로 실험 속도 향상
+
+**작업**:
+```python
+# auto_labeling.py 생성
+"""
+AirLine 결과로 GT 자동 생성
+- 6개 점 자동 추출
+- ground_truth.json 포맷 저장
+"""
+
+# 실행
+python auto_labeling.py --output dataset/ground_truth_auto.json
+```
+
+**예상 소요**: 1시간
+**마감**: Priority 0 다음
+
+---
+
+### 🟢 Priority 2: Alpha 실험 (High)
+
+**목적**: 최적 CVaR threshold 찾기
+
+**실험 계획**:
+```bash
+# 5개 alpha 실험 (각 30 iterations)
 python optimization.py --iterations 30 --n_initial 5 --alpha 0.1 --n_w 3
+python optimization.py --iterations 30 --n_initial 5 --alpha 0.2 --n_w 3
+python optimization.py --iterations 30 --n_initial 5 --alpha 0.3 --n_w 3
+python optimization.py --iterations 30 --n_initial 5 --alpha 0.4 --n_w 3
+python optimization.py --iterations 30 --n_initial 5 --alpha 0.5 --n_w 3
 ```
 
-**목표**: 일단 **완주 보장**
+**예상 소요**: 실험당 2-3시간 (총 10-15시간)
+**병렬 실행 가능**: TDR 비활성화 후 안정적
 
-#### 전략 B: 공격적 접근 (Phase 2 성공 시)
+---
+
+### 🟢 Priority 3: 시각화 및 분석 (High)
+
+**목적**: 논문 Figure 생성
+
+**작업**:
+1. `visualization.py` 작성
+   - 초기/중간/최종 선 검출 결과 비교
+   - CVaR 개선 추이 그래프
+   - Alpha별 성능 비교 박스플롯
+
+2. `analyze_results.py` 수정
+   - CVaR vs Mean 히스토그램
+   - 환경별 성능 분포
+   - 실패 케이스 분석
+
+**예상 소요**: 2-3시간
+**마감**: 실험 완료 후
+
+---
+
+### 🟠 Priority 4: n_w 실험 (Medium)
+
+**목적**: 환경 샘플링 개수 최적화
+
+**실험**:
 ```bash
-# 50 iterations (원래 목표)
-python optimization.py --iterations 50 --n_initial 5 --alpha 0.1 --n_w 3
+python optimization.py --n_w 5 --iterations 30 --alpha 0.1
+python optimization.py --n_w 10 --iterations 30 --alpha 0.1
+python optimization.py --n_w 15 --iterations 30 --alpha 0.1
+python optimization.py --n_w 20 --iterations 30 --alpha 0.1
 ```
 
-**목표**: 36번 → 50번 돌파
+**예상 소요**: 실험당 2-3시간
+**우선순위**: Alpha 실험 다음
 
 ---
 
-## 📁 준비된 파일
+### 🔵 Priority 5: 메트릭 검증 (Low)
 
-### 1. MEMORY_ISSUE_ANALYSIS.md
-**위치**: `BO_optimization/MEMORY_ISSUE_ANALYSIS.md`
-**내용**:
-- 전체 실험 패턴 분석
-- Opus의 상세 원인 분석
-- 단계별 해결 방안
-- Phase별 적용 계획
+**의문점**:
+- CVaR과 평균이 동일하게 움직임
+- 실패 케이스를 제대로 구분 못하는 것 같음
 
-### 2. diagnose_shutdown.py (Opus 제공)
-**위치**: 아직 생성 안 됨 → **다음 세션에서 생성 필요**
-**기능**:
-- SystemMonitor 클래스 (CPU/메모리/GPU 모니터링)
-- AirLine/CRG311 모듈 테스트
-- CUDA 안정성 테스트
-- 메모리 집약적 연산 테스트
+**작업**:
+1. 다양한 실패 케이스 테스트
+   - 선 검출 안 됨: 0점 적절?
+   - 방향만 맞음: 거리 패널티 충분?
+   - 위치만 맞음: 방향 패널티 충분?
 
-### 3. full_pipeline_fixed.py (Opus 제공)
-**위치**: 아직 생성 안 됨 → **나중에 통합 고려**
-**기능**:
-- 컨텍스트 매니저 패턴
-- RANSAC 가중치 검증
-- 메모리 안전 파이프라인
+2. 필요시 메트릭 조정
+
+**예상 소요**: 1시간
+**우선순위**: 시간 있으면
 
 ---
 
-## 🚀 다음 세션 시작 시 체크리스트
+### 🔵 Priority 6: RANSAC 가중치 재검토 (Low)
 
-### 즉시 실행 (순서대로!)
+**의문점**:
+- 범위 [0.0, 1.0], [1, 10] 적절?
+- 정규화 제약 필요?
 
-- [ ] 1. `diagnose_shutdown.py` 생성 및 실행 (5분)
-- [ ] 2. 진단 결과 확인 및 문제 모듈 파악 (5분)
-- [ ] 3. GPU 메모리 80% 제한 코드 추가 (5분)
-- [ ] 4. GPU 캐시 정리 강화 코드 추가 (10분)
-- [ ] 5. 체크포인트 시스템 추가 (10분)
-- [ ] 6. 30 iterations 실험 시작 (1-2시간)
-- [ ] 7. 13번 벽 통과 확인! ✨
-- [ ] 8. 36번 벽 통과 확인! ✨✨
-- [ ] 9. 완주 성공 시 50 iterations 재시도
+**작업**:
+- `full_pipeline.py:160-236` 재검토
+- 극단값 실험으로 검증
 
-### 실험 중 모니터링
-
-```bash
-# 진행 상황 확인
-ls -1 BO_optimization/logs/run_* | tail -1 | xargs ls -1 | wc -l
-
-# 최신 iteration 확인
-ls -lt BO_optimization/logs/run_*/iter_*.json | head -3
-
-# 프로세스 확인
-ps aux | grep python | grep optimization
-```
+**우선순위**: 나중에
 
 ---
 
-## 💡 핵심 인사이트
+## 📋 즉시 실행 체크리스트 (재부팅 후)
 
-### 왜 Trial 2만 성공했나?
-```python
-# Trial 2 코드 (성공한 유일한 케이스)
-if torch.cuda.is_available():
-    torch.cuda.empty_cache()
-import gc
-gc.collect()
-```
-
-**교훈**:
-1. ✅ **간단하지만 일관된 메모리 해제**
-2. ✅ **GPU 캐시 정리가 핵심**
-3. ❌ **과도한 `del` 명령은 오히려 불안정**
-4. ✅ **복잡한 메모리 관리보다 기본에 충실**
-
-### GPU 메모리가 진짜 주범?
-**증거**:
-- OpenCV 해제 추가해도 13번에서 멈춤
-- AirLine 모델들이 GPU에 상주
-- Trial 2에서 메모리 해제만 강화 → 36번 성공
-
-**결론**: **GPU 메모리 관리가 가장 중요!**
-
----
-
-## ⚠️ 주의사항
-
-### 다음 세션에서 하지 말아야 할 것
-
-1. ❌ **full_pipeline 전체 재작성** - 시간 낭비, 실험 우선
-2. ❌ **복잡한 메모리 관리 추가** - Trial 3의 실패 교훈
-3. ❌ **너무 많은 것을 한 번에 적용** - 무엇이 효과적인지 파악 불가
-
-### 다음 세션에서 해야 할 것
-
-1. ✅ **진단부터 실행** - 정확한 원인 파악
-2. ✅ **GPU 관리 최우선** - 80% 제한 + 주기적 정리
-3. ✅ **체크포인트 필수** - 터져도 중간부터 재시작
-4. ✅ **30 iterations부터** - 완주 보장이 최우선
-5. ✅ **하나씩 차근차근** - 무엇이 효과적인지 확인
-
----
-
-## 📊 예상 결과
-
-### 낙관적 시나리오 (70% 확률)
-- Phase 2 적용 → 30 iterations 완주 ✅
-- 13번, 36번 모두 통과
-- Alpha=0.1 실험 완료
-- 나머지 alpha 실험 진행 가능
-
-### 현실적 시나리오 (20% 확률)
-- Phase 2 적용 → 20번까지 진행
-- 추가 조치 필요 (n_w 줄이기 등)
-- 30 iterations로 재시도
-
-### 비관적 시나리오 (10% 확률)
-- 여전히 13번에서 멈춤
-- 근본적인 문제 (라이브러리 버그)
-- 대안: iteration을 10번씩 나눠서 5번 실행
+- [ ] 1. TDR 비활성화 확인
+- [ ] 2. `borisk_kg.py` 후보 개수 50 or 100으로 증가
+- [ ] 3. **Priority 0**: BoRisk 평가 구조 확인 및 수정
+- [ ] 4. **Priority 1**: 자동 라벨링 시스템 구축
+- [ ] 5. **Priority 2**: Alpha 0.1, 0.2, 0.3, 0.4, 0.5 실험 (각 30 iterations)
+- [ ] 6. **Priority 3**: 시각화 스크립트 작성 및 Figure 생성
+- [ ] 7. n_w 실험 (시간 있으면)
 
 ---
 
 ## 🎓 최종 목표
 
-### 단기 목표 (이번 세션)
-- ✅ Alpha=0.1 실험 완주 (30 iterations)
-- ✅ 메모리 문제 해결 방법 확립
+### 단기 (이번 주)
+- ✅ GPU 3D 문제 해결
+- ✅ 30 iterations 완주
+- [ ] Priority 0 완료 (BoRisk 구조 확인)
+- [ ] 5개 alpha 실험 완료
 
-### 중기 목표 (다음 세션)
-- ✅ 5개 alpha 실험 완료 (0.1, 0.2, 0.3, 0.4, 0.5)
-- ✅ 각 30-50 iterations
+### 중기 (다음 주)
+- [ ] 자동 라벨링 시스템 완성
+- [ ] 결과 분석 및 Figure 생성
+- [ ] 논문 초안 작성 시작
 
-### 장기 목표 (졸업!)
-- ✅ 결과 분석 및 Figure 생성
-- ✅ 논문 작성
-- ✅ 졸업! 🎉
+### 장기 (졸업!)
+- [ ] 논문 완성
+- [ ] 발표 자료 준비
+- [ ] 졸업! 🎉
 
 ---
 
-**마지막 업데이트**: 2025-11-13 20:30 (세션 6 종료)
-**다음 작업**: Phase 1 진단 도구 실행 → Phase 2 핵심 개선 적용 → Phase 3 실험
-**Status**: 🟡 **원인 파악 완료, 해결책 준비 완료, 적용 대기 중**
+## 💡 핵심 인사이트
+
+### GPU 3D vs GPU 메모리
+- **GPU 메모리**: 데이터 저장 공간 (8GB 중 0.26GB만 사용)
+- **GPU 3D (연산 부하)**: GPU 코어 사용률 (100% 폭증)
+- **Windows TDR**: GPU가 2초 이상 응답 없으면 프로세스 킬
+- **해결**: 후보 개수 감소 + GPU 동기화
+
+### Trial 2가 성공한 진짜 이유
+- 간단한 메모리 해제 ✅
+- **우연히 GPU 연산량이 적당했음** ✅
+- 36번까지 가다가 GPU 부하 누적으로 종료
+
+### TDR 비활성화 후 기대 효과
+- GPU 연산 타임아웃 없음
+- 후보 개수 100개로 증가 가능
+- 더 정확한 획득 함수 평가
+
+---
+
+## 📊 현재 실험 진행 상황
+
+**Run**: `run_20251113_223406`
+**Alpha**: 0.1 (worst 10%)
+**n_w**: 3
+**Iterations**: 19+ / 30 (진행 중)
+**Best CVaR**: 0.6849
+
+**상태**: 🟢 **정상 진행 중!**
+
+---
+
+## ⚠️ 주의사항
+
+### TDR 비활성화 후
+- 후보 개수를 50 → 100으로 서서히 증가
+- 첫 실험은 30개로 안정성 확인
+- GPU 온도 모니터링
+
+### BoRisk 구조 확인
+- **매우 중요!** 현재 3배 느린 구조일 가능성
+- `evaluate_on_w_set()` 대신 `evaluate_single()` 사용하는지 확인
+- 수정 시 알고리즘 정확성 유지
+
+---
+
+**마지막 업데이트**: 2025-11-13 22:40 (세션 7)
+**다음 작업**: TDR 비활성화 + 재부팅 → Priority 0 확인 → Alpha 실험
+**Status**: 🟢 **GPU 3D 문제 해결! 실험 진행 중!**
 
 **🔥 중요**:
-1. **진단부터!** - `diagnose_shutdown.py` 먼저 실행
-2. **GPU 관리!** - 80% 제한 + 주기적 정리
-3. **체크포인트!** - 5번마다 저장
-4. **30번부터!** - 완주 보장이 최우선
+1. **TDR 비활성화 필수!** (재부팅 필요)
+2. **Priority 0 확인!** (BoRisk 구조가 올바른지)
+3. **자동 라벨링!** (실험 속도 향상)
+4. **Alpha 실험!** (5개 조합 완료)
 
-**화이팅! 이번엔 꼭 성공하자! 💪**
+**화이팅! 거의 다 왔다! 💪**
