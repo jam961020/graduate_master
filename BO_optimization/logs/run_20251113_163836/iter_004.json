@@ -1,7 +1,7 @@
 {
   "iteration": 4,
   "acq_function": "BoRisk-KG",
-  "acq_value": 0.6399002258922959,
+  "acq_value": 0.4073954454140221,
   "parameters": {
     "edgeThresh1": 1.96506059777181,
     "simThresh1": 0.7633356913450884,

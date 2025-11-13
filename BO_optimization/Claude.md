@@ -3,8 +3,9 @@
 
 Repository: https://github.com/jam961020/graduate_master
 
-**최종 업데이트: 2025.11.13 02:35**
+**최종 업데이트: 2025.11.13 (세션 4)**
 **✅ Full BoRisk-KG 판타지 관측 활성화 완료**
+**🚨 치명적 이슈: 매 iteration 15개 평가 중 (수정 필요!)**
 
 ---
 
@@ -83,24 +84,26 @@ cat results/bo_cvar_*.json | tail -30
 3. **CVaR 계산**: GP의 판타지 샘플링으로 계산 (실제 평가 아님!)
 4. **w_set**: 획득 함수에서 판타지로만 사용 (10~20개 샘플)
 
-### 현재 구현의 Critical 문제
-**⚠️ 현재 코드는 BoRisk가 아닌 Vanilla BO + CVaR objective!**
+### 현재 구현 상태
 
-| 항목 | 현재 (잘못됨) | BoRisk (올바름) |
-|------|--------------|----------------|
-| **평가 개수** | 매번 113개 전체 | 매번 n_w개 (10~20개) |
-| **GP 모델** | x → y | (x, w) → y |
-| **획득 함수** | EI/UCB | ρKG (qMFKG) |
-| **CVaR 계산** | 직접 평가 | GP 샘플링 |
-| **속도** | 매우 느림 | 빠름 (1/10) |
+| 항목 | 현재 구현 | 상태 | 비고 |
+|------|----------|------|------|
+| **평가 개수** | 매번 n_w개 (15개) | ❌ 잘못됨 | **1개만 평가해야 함!** |
+| **GP 모델** | (x, w) → y | ✅ 완료 | 15D 입력 |
+| **획득 함수** | BoRisk-KG | ✅ 완료 | 판타지 관측 사용 |
+| **CVaR 계산** | GP 예측 | ✅ 완료 | `_compute_cvar_from_model` |
+| **w 선택** | 없음 (모든 w 평가) | ❌ 잘못됨 | **KG가 w 선택해야 함!** |
 
-### BoRisk 필수 구성 요소 (✅ 완료!)
+### BoRisk 필수 구성 요소
 1. ✅ 환경 벡터 추출 (`environment_independent.py`)
 2. ✅ w_set 샘플링 (매 iteration마다)
 3. ✅ GP 모델: (x, w) → y 학습 (15D 입력)
 4. ✅ CVaR-KG 획득 함수 (`borisk_kg.py`)
 5. ✅ CVaR objective 통합
-6. ✅ 판타지 관측 구조 (SimplifiedBoRiskKG)
+6. ✅ 판타지 관측 구조 (Full BoRisk-KG)
+7. ✅ CVaR GP 추정 (`_compute_cvar_from_model`)
+8. ❌ **w 선택 로직** (수정 필요!)
+9. ❌ **1개 평가 구조** (수정 필요!)
 ---
 
 ## 🤖 Claude 협업 환경
@@ -135,36 +138,32 @@ graduate_master/
 
 ---
 
-## 🎯 현재 작업 상태 (2025.11.12 23:45)
+## 🎯 현재 작업 상태 (2025.11.13 세션 4)
 
 ### ✅ 완료된 작업
 
-#### 1. Repository Clone 및 경로 문제 해결 (완료 2025.11.12)
+#### 1. Repository Clone 및 경로 문제 해결 (완료)
 - Windows 로컬에 repository clone 완료
-- `test_clone_final.py` 모든 하드코딩 경로 수정
-- Windows → Linux 호환 경로로 변경 (`__file__` 기준)
-- 주요 수정:
-  - 카메라 파라미터 경로
-  - YOLO/DexiNed 모델 경로
-  - Windows 빌드 경로 주석 처리
-  - samsung2024 디렉토리 체크 제거
+- 모든 경로 수정 완료
 
-#### 2. BoRisk 알고리즘 구현 완료 (완료 2025.11.12)
-- BoRisk 논문 분석 및 완전 구현 ✅
+#### 2. BoRisk 알고리즘 구현 (대부분 완료)
+- BoRisk 논문 분석 및 구현 ✅
 - w_set 샘플링 시스템 구축 ✅
 - GP 모델: (x, w) → y 학습 구조 ✅
-- **CVaR-KG 획득 함수 적용 (`borisk_kg.py`)** ✅
+- **Full BoRisk-KG 획득 함수** ✅
+- **판타지 관측 구현** ✅ (`posterior.rsample()`)
+- **CVaR GP 추정** ✅ (`_compute_cvar_from_model`)
 - 환경 벡터 통합 완료 ✅
-- `Simplified-CVaR-KG` 성공적으로 작동 확인 ✅
+- ❌ **w 선택 로직 없음** (수정 필요!)
+- ❌ **매 iteration 15개 평가** (1개만 해야 함!)
 
 #### 3. 평가 메트릭 구현 (완료)
 - **직선 방정식 기반 평가**
 - `line_equation_evaluation()` (optimization.py:43-119)
-- 방향 유사도 (60%) + 평행 거리 (40%)
+- 기울기 차이 기반 평가로 개선
 
-#### 4. 9D 파라미터 최적화 (완료)
-- AirLine 6D + RANSAC 3D
-- `ransac_center_w`, `ransac_length_w`, `ransac_consensus_w`
+#### 4. 8D 파라미터 최적화 (완료)
+- AirLine 6D + RANSAC 2D (Q, QG 개별 가중치)
 - BOUNDS 업데이트 완료
 
 #### 5. 환경 벡터 시스템 (완료)
@@ -172,22 +171,40 @@ graduate_master/
 - 6D 환경 특징 추출
 - GP 입력으로 통합 완료
 
-### 🔄 현재 상황 (2025.11.12 23:45)
+### 🔄 현재 상황 (2025.11.13 세션 4)
 
 #### 실행 환경
 - **Windows 로컬**: 실행 가능 ✅
 - **CRG311.pyd**: 설치 완료 ✅
-- **코드 상태**: BoRisk KG 적용 완료 ✅
+- **코드 상태**: Full BoRisk-KG 활성화 ✅
 
-#### 실험 상태
-- **BoRisk KG**: Simplified-CVaR-KG 성공 ✅
-- **실험 진행 중**: alpha=0.1, 전체 데이터셋 (113장)
-- **RANSAC 버그**: 1개 선 처리 로직 추가 완료 ✅
-- **환경 벡터**: 6D 추출 성공, 분산 높음 (GP noise 0.74) ✅
+#### 알고리즘 상태
+- **Full BoRisk-KG**: 활성화됨 (`use_full_kg=True`) ✅
+- **판타지 관측**: 정상 작동 ✅
+- **CVaR GP 추정**: 구현됨 ✅
+- **평가 구조**: 매 iteration 15개 평가 중 ❌ (1개만 해야 함!)
+- **w 선택**: 없음 ❌ (KG가 선택해야 함!)
 
-### 🔴 긴급 해결 필요 문제점 (2025.11.12)
+### 🔴 긴급 해결 필요 문제점 (2025.11.13)
 
-#### 1. 자동 라벨링 시스템 미구축 (최우선!)
+#### 0. BoRisk 평가 구조 수정 (치명적! 🚨🚨🚨)
+**현재 상황**:
+- 매 iteration마다 15개 (n_w개) 이미지 **전부** 실제 평가 중
+- `optimize_borisk()`가 x만 반환, w 선택 안 함
+- BoRisk의 핵심 "효율성" 완전히 상실
+
+**필요한 작업**:
+- [ ] **Step 1**: `borisk_kg.py` - w 선택 로직 추가
+  - `optimize()` 함수가 (x, w_idx) 반환하도록 수정
+- [ ] **Step 2**: `optimization.py` - `evaluate_single()` 함수 추가
+  - 단일 (x, w) 쌍만 평가하는 함수
+- [ ] **Step 3**: `optimization.py` - BO 루프 수정
+  - w_set 전부 평가 → 1개만 평가로 변경
+
+**우선순위**: 🚨🚨🚨 **최최우선** (알고리즘 본질 문제!)
+**예상 효과**: 15배 속도 향상
+
+#### 1. 자동 라벨링 시스템 미구축 (High Priority)
 **현재 상황**:
 - 수동 라벨링에 의존 → 시간 소요 큼
 - GT 데이터 부족 → 실험 속도 느림
@@ -196,11 +213,8 @@ graduate_master/
 - [ ] `auto_labeling.py` 작성
   - AirLine_assemble_test.py로 6개 점 자동 추출
   - ground_truth.json 포맷으로 저장
-- [ ] `labeling_tool.py` 수정
-  - 자동 생성 GT 불러오기 기능
-  - 수동 수정 가능하도록
 
-**우선순위**: 🚨 최우선 (오늘 중 완료 필요)
+**우선순위**: 🟡 High (Priority 0 다음)
 
 #### 2. 메트릭 재검토 필요 (High Priority)
 **문제 관찰**:
@@ -253,21 +267,43 @@ test_cases = [
 - [ ] BoTorch 튜토리얼과 비교
 - [ ] 필요시 수정
 
-### 📋 긴급 작업 우선순위 (2025.11.12)
+### 📋 긴급 작업 우선순위 (2025.11.13)
 
-#### Priority 1: 자동 라벨링 시스템 (최우선! 🚨)
-**목표**: AirLine 결과로 GT 자동 생성
-1. **auto_labeling.py 작성**
-   - AirLine_assemble_test.py 사용
-   - 6개 점 (longi 4개 + collar 2개) 자동 추출
-   - ground_truth.json 포맷으로 저장
+#### Priority 0: BoRisk 평가 구조 수정 (최최우선! 🚨🚨🚨)
+**목표**: 매 iteration 1개 (x,w) 쌍만 평가
 
-2. **labeling_tool.py 수정**
-   - 자동 생성 GT 불러오기
-   - 수동 수정 인터페이스
+**작업 3단계**:
+1. **borisk_kg.py 수정**
+   - `BoRiskAcquisition.optimize()` - (x, w_idx) 반환
+   - w 선택 로직 추가
+
+2. **optimization.py - evaluate_single() 추가**
+   - 단일 (x, w) 평가 함수
+   - `evaluate_on_w_set()`의 루프 내부 로직 사용
+
+3. **optimization.py - BO 루프 수정**
+   - Line 560-614 수정
+   - 15개 평가 → 1개 평가
 
 **예상 소요**: 1-2시간
-**마감**: 오늘 중
+**예상 효과**: 15배 속도 향상
+**마감**: **최우선!**
+
+---
+
+#### Priority 1: 자동 라벨링 시스템 (High)
+**목표**: AirLine 결과로 GT 자동 생성
+
+**작업**:
+- `auto_labeling.py` 작성
+  - AirLine_assemble_test.py 사용
+  - 6개 점 자동 추출
+  - ground_truth.json 포맷 저장
+
+**예상 소요**: 1시간
+**마감**: Priority 0 다음
+
+---
 
 #### Priority 2: 환경/alpha 실험 (High)
 **목표**: 최적 하이퍼파라미터 찾기
@@ -588,23 +624,33 @@ md5sum -c file_hashes.txt
 
 ---
 
-## 🚨 긴급 메모 (2025.11.12)
+## 🚨 긴급 메모 (2025.11.13 세션 4)
 
 ### 현재 상황
-- **마감**: 오늘 (졸업 마감)
-- **환경**: Windows 로컬 (Linux 포기)
-- **상태**: 기본 실행 가능, 분석 및 개선 필요
+- **마감**: 임박 (졸업 마감)
+- **환경**: Windows 로컬
+- **상태**: **치명적 버그 발견** - 알고리즘 구조 문제!
 
 ### 오늘 해야 할 일 (우선순위)
-1. ✅ **자동 라벨링** (auto_labeling.py)
-2. ✅ **실험 돌리기** (alpha, n_w 조합)
-3. ✅ **시각화** (Figure 생성)
-4. ✅ **분석** (CVaR vs Mean, 메트릭 검증)
+1. 🚨🚨🚨 **BoRisk 평가 구조 수정** (최최우선!)
+   - 15개 평가 → 1개 평가
+   - w 선택 로직 추가
+   - 예상 효과: 15배 속도 향상
+2. 🟡 **자동 라벨링** (auto_labeling.py)
+3. 🟢 **실험 돌리기** (수정 후)
+4. 🟢 **시각화** (Figure 생성)
 
 ### 성공 기준
+- [ ] **Priority 0 완료** - BoRisk 구조 수정 (필수!)
 - [ ] 자동 라벨링 시스템 완성
 - [ ] 최소 5개 실험 조합 완료
-- [ ] 논문용 Figure 3개 이상
-- [ ] 결과 분석 완료
+- [ ] 논문용 Figure 생성
 
-**화이팅! 졸업하자! 🎓**
+### 중요 발견사항
+- ✅ **Full BoRisk-KG 이미 활성화됨!**
+- ✅ **판타지 관측 정상 작동!**
+- ✅ **CVaR GP 추정 함수 존재!**
+- ❌ **하지만 w 선택 로직 없음** (치명적!)
+- ❌ **매번 15개 평가 중** (1개만 해야 함!)
+
+**화이팅! 진짜 BoRisk로 졸업하자! 🎓**

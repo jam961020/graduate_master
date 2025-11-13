@@ -8,7 +8,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(python auto_labeling.py:*)",
+      "Bash(python analyze_results.py:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

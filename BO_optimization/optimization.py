@@ -593,9 +593,12 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         best_cvar_history.append(cvar)
     print(f"  Initial best CVaR: {max(best_cvar_history):.4f}")
 
-    # 로그 디렉토리 생성
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
+    # 로그 디렉토리 생성 (타임스탬프별로 분리)
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_dir = Path("logs") / f"run_{timestamp}"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    print(f"  Logs will be saved to: {log_dir}")
 
     # ===== Phase 5: BO 루프 (BoRisk!) =====
     print(f"\n[Phase 4] BO iterations (BoRisk)")
@@ -757,7 +760,7 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     print(f"Found at iteration: {best_idx + 1}")
     print("="*60)
 
-    return best_X, best_cvar_history, train_Y
+    return best_X, best_cvar_history, train_Y, timestamp, log_dir
 
 
 if __name__ == "__main__":
@@ -822,7 +825,7 @@ if __name__ == "__main__":
     yolo_detector = YOLODetector(args.yolo_model)
     
     # BoRisk 최적화 실행
-    best_params, history, all_Y = optimize_risk_aware_bo(
+    best_params, history, all_Y, timestamp, log_dir = optimize_risk_aware_bo(
         images_data,
         yolo_detector,
         n_iterations=args.iterations,
@@ -847,15 +850,17 @@ if __name__ == "__main__":
     print(f"  초기 CVaR: {history[0]:.4f}")
     print(f"  개선도: {(history[-1] - history[0]) / (history[0] + 1e-6) * 100:+.1f}%")
     
-    # 결과 저장
+    # 결과 저장 (로그와 동일한 timestamp 사용)
     results_dir = Path("results")
     results_dir.mkdir(exist_ok=True)
-    
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # timestamp는 이미 Line 598에서 생성됨
     result_file = results_dir / f"bo_cvar_{timestamp}.json"
     
     result_data = {
         "algorithm": "BoRisk",
+        "timestamp": timestamp,  # 실험 고유 ID
+        "log_dir": str(log_dir),  # 로그 디렉토리 경로
         "alpha": args.alpha,
         "n_w": args.n_w,
         "n_images": len(images_data),

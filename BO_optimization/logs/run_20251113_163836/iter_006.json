@@ -1,7 +1,7 @@
 {
   "iteration": 6,
   "acq_function": "BoRisk-KG",
-  "acq_value": 0.5319931371940678,
+  "acq_value": 0.277404246904692,
   "parameters": {
     "edgeThresh1": -21.611244567320462,
     "simThresh1": 0.6233464598461514,
@@ -12,8 +12,8 @@
     "ransac_weight_q": 19.940472697954267,
     "ransac_weight_qg": 12.331012379399173
   },
-  "cvar": 0.43452556746505017,
-  "score": 0.43452556746505017,
+  "cvar": 0.4353858415143139,
+  "score": 0.4353858415143139,
   "w_idx": 0,
   "image_idx": 46,
   "n_w": 3
