@@ -99,7 +99,12 @@ def main():
         if coords is not None:
             # 키는 확장자 제외 (ground_truth.json과 동일)
             img_key = image_path.stem
-            results[img_key] = coords
+
+            # ground_truth.json 포맷 맞추기
+            results[img_key] = {
+                "image": str(image_path.relative_to(image_dir.parent.parent)),  # dataset/images/test/...
+                "coordinates": coords
+            }
             success_count += 1
         else:
             print(f"  Failed: {image_path.name}")

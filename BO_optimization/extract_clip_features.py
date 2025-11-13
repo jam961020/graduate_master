@@ -68,21 +68,32 @@ def extract_clip_features_all_images(image_dir, gt_file, yolo_model_path, output
         
         # Detect ROI with YOLO
         try:
-            detections = yolo_detector.detect(image)
-            
-            if len(detections) == 0:
+            rois = yolo_detector.detect_rois(image)  # [(class_id, x1, y1, x2, y2), ...]
+
+            if len(rois) == 0:
                 # No ROI detected, use full image
+                print(f"  [WARN] No ROI detected for {img_name}, using full image")
                 roi_crop = image
             else:
-                # Use first detection
-                x1, y1, x2, y2 = detections[0]['bbox']
+                # Prefer longi_WL (class 2) for welding line ROI
+                # If not found, use first detection
+                longi_roi = [roi for roi in rois if roi[0] == 2]
+
+                if longi_roi:
+                    _, x1, y1, x2, y2 = longi_roi[0]
+                else:
+                    _, x1, y1, x2, y2 = rois[0]
+
                 roi_crop = image[y1:y2, x1:x2]
-                
+
                 if roi_crop.size == 0:
+                    print(f"  [WARN] Empty ROI for {img_name}, using full image")
                     roi_crop = image
-        
+
         except Exception as e:
-            print(f"  [WARN] YOLO failed for {img_name}: {e}")
+            print(f"  [ERROR] YOLO failed for {img_name}: {e}")
+            import traceback
+            traceback.print_exc()
             roi_crop = image
         
         # Extract CLIP features

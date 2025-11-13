@@ -81,16 +81,40 @@ def extract_parameter_independent_environment(image, roi=None):
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     noise = np.abs(gray.astype(float) - blurred.astype(float))
     noise_score = np.clip(noise.mean() / 50, 0.0, 1.0)
-    
+
+    # 7. Gradient 강도 (Gradient Strength)
+    # Sobel gradient magnitude
+    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+    gradient_mag = np.sqrt(sobelx**2 + sobely**2)
+    gradient_strength = np.clip(gradient_mag.mean() / 100, 0.0, 1.0)
+
+    # 8. 선명도 (Sharpness)
+    # Laplacian variance (높을수록 선명)
+    sharpness_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+    sharpness_score = np.clip(sharpness_var / 500, 0.0, 1.0)
+
+    # 9. 지역 대비 (Local Contrast)
+    # 작은 윈도우에서 표준편차 평균
+    kernel_size = 15
+    local_mean = cv2.blur(gray.astype(float), (kernel_size, kernel_size))
+    local_sq_mean = cv2.blur((gray.astype(float))**2, (kernel_size, kernel_size))
+    local_var = local_sq_mean - local_mean**2
+    local_std = np.sqrt(np.maximum(local_var, 0))
+    local_contrast_score = np.clip(local_std.mean() / 50, 0.0, 1.0)
+
     env = {
         'brightness': float(brightness_score),
         'contrast': float(contrast_score),
         'edge_density': float(edge_score),
         'texture_complexity': float(texture_score),
         'blur_level': float(blur_score),
-        'noise_level': float(noise_score)
+        'noise_level': float(noise_score),
+        'gradient_strength': float(gradient_strength),
+        'sharpness': float(sharpness_score),
+        'local_contrast': float(local_contrast_score)
     }
-    
+
     return env
 
 

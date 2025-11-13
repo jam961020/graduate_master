@@ -70,20 +70,30 @@ def analyze_clip_correlation(log_dir, clip_features_file):
     # 5. Correlation analysis
     print("\n[5] Correlation Analysis")
     print("="*70)
-    
-    feature_names = ['clip_clear', 'clip_shadow', 'clip_debris', 
-                     'clip_reflection', 'clip_beads', 'clip_noise']
-    
-    print(f"\n{'Feature':<20} {'Correlation':<12} {'Strength':<15} {'Interpretation'}")
-    print("-" * 75)
-    
+
+    # Auto-detect features from data
+    sample_features = matched_data[0]['features']
+    feature_names = list(sample_features.keys())
+
+    # Separate baseline and CLIP features
+    baseline_features = [f for f in feature_names if not f.startswith('clip_')]
+    clip_features = [f for f in feature_names if f.startswith('clip_')]
+
+    print(f"\nDetected features:")
+    print(f"  Baseline: {len(baseline_features)} ({', '.join(baseline_features) if baseline_features else 'None'})")
+    print(f"  CLIP:     {len(clip_features)} ({', '.join(clip_features) if clip_features else 'None'})")
+
+    print(f"\n{'Feature':<25} {'Correlation':<12} {'Strength':<15} {'Interpretation'}")
+    print("-" * 80)
+
     correlations = []
     for fname in feature_names:
-        feature_vals = [d['features'][fname] for d in matched_data]
-        perf_vals = [d['perf'] for d in matched_data]
-        
-        corr = np.corrcoef(feature_vals, perf_vals)[0, 1]
-        correlations.append((fname, corr))
+        if fname in sample_features:  # Check if feature exists
+            feature_vals = [d['features'][fname] for d in matched_data]
+            perf_vals = [d['perf'] for d in matched_data]
+
+            corr = np.corrcoef(feature_vals, perf_vals)[0, 1]
+            correlations.append((fname, corr))
         
         if abs(corr) > 0.5:
             strength = "VERY STRONG"
@@ -106,26 +116,47 @@ def analyze_clip_correlation(log_dir, clip_features_file):
         else:
             interp = "Lower = Better"
         
-        print(f"{fname:<20} {corr:>10.4f} {marker} {strength:<15} {interp}")
+        print(f"{fname:<25} {corr:>10.4f} {marker} {strength:<15} {interp}")
     
-    # 6. Compare with baseline
-    print(f"\n[6] Comparison with Baseline")
+    # 6. Summary
+    print(f"\n[6] Summary")
     print("="*70)
-    
-    print("\nBaseline (brightness, contrast, etc.):")
-    print("  All features: |r| < 0.15")
-    print("  Best: contrast r = -0.135")
-    
-    print(f"\nCLIP features:")
+
     correlations.sort(key=lambda x: abs(x[1]), reverse=True)
-    for fname, corr in correlations[:3]:
-        print(f"  {fname}: r = {corr:.3f}")
-    
-    best_clip_corr = abs(correlations[0][1])
-    improvement = (best_clip_corr / 0.135 - 1) * 100 if best_clip_corr > 0 else 0
-    
-    print(f"\nBest CLIP correlation: {correlations[0][0]} = {correlations[0][1]:.3f}")
-    print(f"Improvement vs baseline: {improvement:.1f}%")
+
+    # Separate by type
+    baseline_corrs = [(f, c) for f, c in correlations if not f.startswith('clip_')]
+    clip_corrs = [(f, c) for f, c in correlations if f.startswith('clip_')]
+
+    if baseline_corrs:
+        print(f"\nBaseline Features (ROI-based):")
+        for fname, corr in baseline_corrs[:5]:
+            print(f"  {fname:<25}: r = {corr:>7.4f}")
+        best_baseline = abs(baseline_corrs[0][1]) if baseline_corrs else 0
+    else:
+        best_baseline = 0
+        print(f"\nNo baseline features found")
+
+    if clip_corrs:
+        print(f"\nCLIP Features (ROI-based):")
+        for fname, corr in clip_corrs:
+            print(f"  {fname:<25}: r = {corr:>7.4f}")
+        best_clip = abs(clip_corrs[0][1]) if clip_corrs else 0
+    else:
+        best_clip = 0
+        print(f"\nNo CLIP features found")
+
+    # Best overall
+    print(f"\n{'='*70}")
+    print(f"Best overall: {correlations[0][0]} = {correlations[0][1]:.4f}")
+
+    if best_baseline > 0 and best_clip > 0:
+        if best_clip > best_baseline:
+            improvement = (best_clip / best_baseline - 1) * 100
+            print(f"CLIP improvement: +{improvement:.1f}% vs baseline")
+        else:
+            improvement = (best_baseline / best_clip - 1) * 100
+            print(f"Baseline better: +{improvement:.1f}% vs CLIP")
     
     # 7. Recommendations
     print(f"\n[7] Recommendations")
@@ -166,8 +197,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--log_dir", default="logs/run_20251113_225648",
                        help="Experiment log directory")
-    parser.add_argument("--clip_features", default="environment_clip.json",
-                       help="CLIP features JSON file")
+    parser.add_argument("--clip_features", default="environment_roi_all.json",
+                       help="Environment features JSON file (baseline + CLIP)")
     args = parser.parse_args()
     
     correlations = analyze_clip_correlation(args.log_dir, args.clip_features)

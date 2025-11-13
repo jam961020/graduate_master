@@ -6,6 +6,73 @@
 
 ---
 
+## 🔥 최신 업데이트 (2025.11.14)
+
+### ✅ ROI 기반 환경 추출 시스템 완성 (2025.11.14 세션 10)
+
+**문제 발견:**
+- CLIP이 전체 이미지로 동작 (ROI 미적용)
+- `yolo_detector.detect()` 메서드 없음 → Exception fallback
+- 용접 특화 프롬프트를 CLIP이 이해 못함
+- 상관관계 매우 약함 (r = -0.177)
+
+**해결 과정:**
+
+**1. YOLO ROI 추출 수정** (`extract_clip_features.py`)
+```python
+# 수정 전
+detections = yolo_detector.detect(image)  # ❌
+
+# 수정 후
+rois = yolo_detector.detect_rois(image)  # ✅
+longi_roi = [roi for roi in rois if roi[0] == 2]  # longi_WL 우선
+roi_crop = image[y1:y2, x1:x2]
+```
+
+**2. CLIP 프롬프트 일반화** (`clip_environment.py`)
+```python
+# 수정 전 (용접 특화, 6D)
+"a welding ROI with heavy dark shadows"  # ❌ CLIP 모름
+
+# 수정 후 (일반론적, 4D)
+"a bright clear well-lit image"          # ✅ CLIP 이해
+"a dark shadowy poorly-lit image"
+"a rough textured surface with debris"
+"a smooth clean surface"
+```
+
+**3. Baseline 물리적 특징 추가** (`environment_independent.py`)
+- 기존 6D → **9D 확장**
+- 추가: `gradient_strength`, `sharpness`, `local_contrast`
+
+**4. ROI 기반 통합 추출** (`extract_environment_roi.py`)
+- Baseline 9D + CLIP 4D = **13D 환경 벡터**
+- 113/113 이미지 모두 ROI 검출 성공
+
+**결과:**
+
+| 항목 | v1 (전체 이미지) | v2 (ROI 기반) | 개선 |
+|------|------------------|---------------|------|
+| CLIP 프롬프트 | 용접 특화 (6D) | 일반론적 (4D) | 변별력↑ |
+| Baseline | 6D | 9D | +3D |
+| 총 차원 | 6D | **13D** | +7D |
+| 최고 상관관계 | 0.177 | **0.296** | **+67%** |
+| 상관관계 >0.25 | 0개 | **3개** | ✅ |
+
+**상관관계 분석 (44개 이미지):**
+1. **clip_smooth: r = 0.296** (MODERATE)
+2. **clip_rough: r = 0.250** (MODERATE)
+3. **local_contrast: r = -0.234** (MODERATE)
+
+**파일:**
+- ✅ `environment_roi_v2.json` - 최종 환경 벡터 (13D, 113 images)
+- ✅ `clip_environment.py` - 일반 프롬프트 4D
+- ✅ `environment_independent.py` - Baseline 9D
+- ✅ `extract_environment_roi.py` - ROI 통합 추출
+- ✅ `ENVIRONMENT_EXTRACTION.md` - 전체 과정 문서화
+
+---
+
 ## 🔥 최신 업데이트 (2025.11.13)
 
 ### ✅ Full BoRisk-KG 판타지 관측 활성화 (2025.11.13 02:30)

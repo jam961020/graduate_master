@@ -33,14 +33,12 @@ class CLIPEnvironmentEncoder:
         # Load CLIP ViT-B/32 model
         self.model, self.preprocess = clip.load("ViT-B/32", device=self.device)
         
-        # Welding ROI-specific prompts (6D)
+        # General visual prompts (4D) - CLIP can understand
         self.prompts = [
-            "a clear welding ROI with good visibility",
-            "a welding ROI with heavy dark shadows",
-            "a welding ROI with metal debris and particles",
-            "a welding ROI with bright specular reflections",
-            "a welding ROI with weld beads obstructing the line",
-            "a welding ROI with complex texture and noise"
+            "a bright clear well-lit image",
+            "a dark shadowy poorly-lit image",
+            "a rough textured surface with debris",
+            "a smooth clean surface"
         ]
         
         # Pre-compute text embeddings
@@ -54,13 +52,13 @@ class CLIPEnvironmentEncoder:
     
     def encode_roi(self, roi_image):
         """
-        Encode ROI image to 6D semantic vector
-        
+        Encode ROI image to 4D semantic vector
+
         Args:
             roi_image: ROI crop (BGR numpy array)
-        
+
         Returns:
-            features: (6,) numpy array of semantic similarities
+            features: (4,) numpy array of semantic similarities
         """
         # Convert BGR to RGB
         rgb_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2RGB)
@@ -96,24 +94,22 @@ class CLIPEnvironmentEncoder:
         
         if roi_crop.size == 0:
             # Empty ROI, return zeros
-            return np.zeros(6, dtype=np.float32)
+            return np.zeros(4, dtype=np.float32)
         
         return self.encode_roi(roi_crop)
     
     def get_feature_names(self):
         """
         Get semantic feature names
-        
+
         Returns:
             list of feature names
         """
         return [
-            'clip_clear',
-            'clip_shadow',
-            'clip_debris',
-            'clip_reflection',
-            'clip_beads',
-            'clip_noise'
+            'clip_bright',
+            'clip_dark',
+            'clip_rough',
+            'clip_smooth'
         ]
 
 
@@ -134,7 +130,7 @@ def test_clip_encoder():
     print("\nEncoding test ROI...")
     features = encoder.encode_roi(dummy_roi)
     
-    print(f"\nExtracted features (6D):")
+    print(f"\nExtracted features (4D):")
     for name, value in zip(encoder.get_feature_names(), features):
         print(f"  {name:<20}: {value:.4f}")
     
