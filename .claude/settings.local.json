@@ -16,7 +16,10 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.arxiv-vanity.com)",
-      "WebFetch(domain:ar5iv.labs.arxiv.org)"
+      "WebFetch(domain:ar5iv.labs.arxiv.org)",
+      "Bash(conda activate:*)",
+      "Bash(/c/ProgramData/anaconda3/condabin/conda.bat --version)",
+      "Bash(/c/Users/user/.conda/envs/weld2024_mk2/python.exe:*)"
     ],
     "deny": [],
     "ask": []

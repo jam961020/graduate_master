@@ -38,13 +38,39 @@ BO_optimization/           # 👈 항상 여기서 실행!
 ../models/                # (사용 안 함, BO_optimization/models/ 사용)
 ```
 
+### ⚠️ Python 환경 설정 (매우 중요! 재부팅 시 필수 확인!)
+
+**절대 `python3`나 시스템 Python 사용 금지!**
+**반드시 Anaconda의 `weld2024_mk2` 환경 사용!**
+
+```bash
+# 1️⃣ Conda 환경 활성화 (재부팅 후 항상 확인!)
+conda activate weld2024_mk2
+
+# 환경 확인
+conda env list
+# weld2024_mk2에 * 표시가 있어야 함
+
+# Python 경로 확인
+which python
+# /c/Users/user/anaconda3/envs/weld2024_mk2/python 이어야 함
+
+# 2️⃣ PyTorch 설치 확인
+python -c "import torch; print(torch.__version__)"
+# 에러 없이 버전 출력되어야 함
+```
+
+**재부팅 후 증상**:
+- `ModuleNotFoundError: No module named 'torch'` 에러
+- → conda activate weld2024_mk2 실행 필요!
+
 ### 기본 실행 명령어
 ```bash
 # 1. 작업 디렉토리로 이동 (필수!)
 cd /c/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
 
-# 2. Conda 환경 확인 (weld2024_mk2)
-# (보통 자동 활성화됨)
+# 2. Conda 환경 활성화 (재부팅 후 필수!)
+conda activate weld2024_mk2
 
 # 3. 소량 테스트 (3 이미지, 2 iterations)
 python optimization.py --iterations 2 --n_initial 2 --alpha 0.3 --max_images 3 --n_w 3
