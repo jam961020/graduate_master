@@ -580,10 +580,20 @@ def detect_with_full_pipeline(image, params, yolo_detector, ransac_weights=None)
             )
             if result:
                 processed_results.append(result)
+
+        # ROI 처리 후 메모리 정리 (메모리 누수 방지)
+        del roi_bgr, roi_gray, roi_gray_blur, S_roi, roi_bgr_enhanced, roi_gray_enhanced, lines_by_algo
+        if 'result' in locals():
+            del result
     
     # 3. 최종 좌표 계산
     coords = calculate_final_coordinates(processed_results, w, h)
-    
+
+    # 4. 메모리 명시적 해제 (메모리 누수 방지)
+    del processed_results
+    import gc
+    gc.collect()
+
     return coords
 
 

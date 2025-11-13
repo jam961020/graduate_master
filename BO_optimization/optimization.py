@@ -325,6 +325,11 @@ def evaluate_single(X, image_data, yolo_detector):
         h, w = image.shape[:2]
         score = line_equation_evaluation(detected_coords, gt_coords, image_size=(w, h))
 
+        # 메모리 명시적 해제 (메모리 누수 방지)
+        del detected_coords, params, ransac_weights
+        import gc
+        gc.collect()
+
         return torch.tensor([score], dtype=DTYPE, device=DEVICE)
 
     except KeyboardInterrupt:
@@ -620,12 +625,6 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
             print(f"  Using {acq_name}: selected w_idx={w_idx}, acq_value={acq_value:.4f}")
             acq_value = torch.tensor(acq_value) if not torch.is_tensor(acq_value) else acq_value
 
-            # BoRisk KG 계산 후 메모리 해제 (36번 iteration 문제 해결)
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            import gc
-            gc.collect()
-
         except ImportError as e:
             print(f"\n⚠️ BoRisk KG import failed: {e}, falling back to UCB...")
 
@@ -685,44 +684,37 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         train_Y = torch.cat([train_Y, new_score])
         train_Y_normalized = torch.cat([train_Y_normalized, new_score_normalized])
 
-        # 5.7: GP 재학습 (메모리 절약: 5번마다만 재학습)
-        # 36번 iteration 문제 해결을 위한 최적화
-        should_refit = (iteration % 5 == 0) or (iteration < 10)  # 초반에는 매번, 이후에는 5번마다
+        # 5.7: GP 재학습 (매번 수행 - 안정성 우선)
+        try:
+            # Old GP 모델 메모리 해제
+            if 'gp' in locals():
+                del gp
+            if 'mll' in locals():
+                del mll
 
-        if should_refit:
-            try:
-                # Old GP 모델 메모리 해제
-                if 'gp' in locals():
-                    del gp
-                if 'mll' in locals():
-                    del mll
+            gp = SingleTaskGP(
+                train_X_full,
+                train_Y_normalized
+            )
+            mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
+            fit_gpytorch_mll(mll)
 
-                gp = SingleTaskGP(
-                    train_X_full,
-                    train_Y_normalized
-                )
-                mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
-                fit_gpytorch_mll(mll)
+            # GP 재학습 후 메모리 해제
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            import gc
+            gc.collect()
 
-                # GP 재학습 후 메모리 해제
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                import gc
-                gc.collect()
-
-            except Exception as e:
-                print(f"  ⚠️ GP refit failed: {e}")
-                # 노이즈 추가 후 재시도
-                train_Y_normalized = train_Y_normalized + 0.01 * torch.randn_like(train_Y_normalized)
-                gp = SingleTaskGP(
-                    train_X_full,
-                    train_Y_normalized
-                )
-                mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
-                fit_gpytorch_mll(mll)
-        else:
-            # GP 재학습 생략, 데이터만 업데이트
-            print(f"  [GP] Skipping refit (iteration {iteration+1}), using cached model")
+        except Exception as e:
+            print(f"  ⚠️ GP refit failed: {e}")
+            # 노이즈 추가 후 재시도
+            train_Y_normalized = train_Y_normalized + 0.01 * torch.randn_like(train_Y_normalized)
+            gp = SingleTaskGP(
+                train_X_full,
+                train_Y_normalized
+            )
+            mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
+            fit_gpytorch_mll(mll)
 
         # 5.8: GP posterior로 진짜 CVaR 계산! (BoRisk 핵심!)
         # ⭐ 중요: 현재 candidate가 아니라 **current best x**의 CVaR을 계산!
@@ -757,13 +749,6 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
 
             print(f"  [GP CVaR] Evaluated {len(train_X_params)} x candidates, "
                   f"Best CVaR={new_cvar:.4f} (x_idx={best_cvar_idx})")
-
-            # CVaR 계산 후 메모리 해제 (36번 iteration 문제 해결)
-            del posterior, predicted_scores_normalized, predicted_scores, worst_scores
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            import gc
-            gc.collect()
 
         # CVaR history에 추가
         best_cvar_history.append(new_cvar)
@@ -800,23 +785,11 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
 
         print(f"Iter {iteration+1}/{n_iterations} ({acq_name}): CVaR={new_cvar:.4f}, Best={current_best:.4f} ({improvement:+.4f})")
 
-        # 5.11: 메모리 명시적 해제 (36번 iteration 문제 해결 - 강화!)
-        # Iteration 끝마다 사용하지 않는 tensor 명시적 삭제
-        del candidate, new_score, new_score_normalized, x_w
-        if 'acq_value' in locals():
-            del acq_value
-
-        # 강력한 메모리 해제
+        # 5.11: 메모리 명시적 해제 (간소화 - 기본만)
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         import gc
         gc.collect()
-
-        # 10번마다 더 공격적인 메모리 정리
-        if (iteration + 1) % 10 == 0:
-            gc.collect()
-            gc.collect()  # 두 번 호출로 순환 참조 정리
-            print(f"  [Memory] Deep GC at iteration {iteration+1}")
 
         # 5.12: 조기 종료 체크
         if iteration > 10:
