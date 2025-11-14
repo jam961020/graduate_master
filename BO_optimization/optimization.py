@@ -239,37 +239,69 @@ def augment_image(image, n_augment=5):
     return augmented
 
 
-def extract_all_environments(images_data):
+def extract_all_environments(images_data, env_file="environment_top6.json"):
     """
-    모든 이미지의 환경 벡터를 사전 추출
+    모든 이미지의 환경 벡터를 JSON 파일에서 로드 (Top 6 features)
 
     Args:
         images_data: 이미지 데이터 리스트
+        env_file: 환경 특징 JSON 파일 경로 (6D features)
 
     Returns:
         env_features: [N, 6] 환경 벡터 텐서
     """
-    print("[BoRisk] Extracting environment features from all images...")
+    print(f"[BoRisk] Loading environment features from {env_file}...")
+
+    # Load environment JSON
+    with open(env_file, 'r') as f:
+        env_data = json.load(f)
+
+    print(f"[BoRisk] Environment JSON loaded with {len(env_data)} images")
+
+    # Top 6 features (in order)
+    FEATURE_NAMES = [
+        'local_contrast',    # 1. STRONG (-0.42)
+        'clip_rough',        # 2. STRONG (0.40)
+        'brightness',        # 3. MODERATE (0.22)
+        'clip_smooth',       # 4. MODERATE (0.21)
+        'gradient_strength', # 5. MODERATE (-0.21)
+        'edge_density'       # 6. WEAK (0.20)
+    ]
+
     all_env = []
+    missing_count = 0
 
     for img_data in images_data:
-        image = img_data['image']
-        roi = img_data.get('roi', None)
+        img_name = img_data['name']
 
-        # 환경 벡터 추출
-        env = extract_parameter_independent_environment(image, roi)
-        env_vec = [
-            env['brightness'],
-            env['contrast'],
-            env['edge_density'],
-            env['texture_complexity'],
-            env['blur_level'],
-            env['noise_level']
-        ]
+        # Get environment vector from JSON
+        if img_name in env_data:
+            env = env_data[img_name]
+            env_vec = [env[fname] for fname in FEATURE_NAMES]
+        else:
+            # Fallback: extract from image if not in JSON
+            print(f"[WARN] Image '{img_name}' not found in environment JSON, extracting on-the-fly")
+            missing_count += 1
+            image = img_data['image']
+            roi = img_data.get('roi', None)
+            env = extract_parameter_independent_environment(image, roi)
+            # Use old 6D features as fallback
+            env_vec = [
+                env['brightness'],
+                env['contrast'],
+                env['edge_density'],
+                env['texture_complexity'],
+                env['blur_level'],
+                env['noise_level']
+            ]
+
         all_env.append(env_vec)
 
+    if missing_count > 0:
+        print(f"[WARN] {missing_count}/{len(images_data)} images not found in environment JSON")
+
     env_features = torch.tensor(all_env, dtype=DTYPE, device=DEVICE)
-    print(f"[BoRisk] Environment features shape: {env_features.shape}")
+    print(f"[BoRisk] Environment features shape: {env_features.shape} (6D: Top 6 features)")
 
     return env_features
 
@@ -278,24 +310,52 @@ def sample_w_set(env_features, n_w=15, seed=None):
     """
     w_set 샘플링 (BoRisk의 핵심)
 
+    Quasi-Monte Carlo (Sobol sequence) 사용하여 환경 공간을 균등하게 커버
+
     Args:
         env_features: [N, 6] 전체 환경 벡터
         n_w: 샘플링할 환경 개수
-        seed: 랜덤 시드
+        seed: 랜덤 시드 (Sobol scrambling에 사용)
 
     Returns:
-        w_set: [n_w, 6] 샘플링된 환경 벡터
+        w_set: [n_w, w_dim] 샘플링된 환경 벡터
         w_indices: [n_w] 샘플링된 인덱스
     """
-    if seed is not None:
-        torch.manual_seed(seed)
-
     N = env_features.shape[0]
     n_w = min(n_w, N)  # N보다 클 수 없음
+    w_dim = env_features.shape[1]
 
-    # 랜덤 샘플링
-    perm = torch.randperm(N)
-    w_indices = perm[:n_w]
+    # Sobol sequence로 환경 공간 균등 샘플링
+    sobol = SobolEngine(dimension=w_dim, scramble=True, seed=seed if seed is not None else 0)
+    sobol_samples = sobol.draw(n_w).to(env_features.device)  # [n_w, w_dim] in [0, 1]
+
+    # 환경 특징의 min/max 범위 계산
+    env_min = env_features.min(dim=0)[0]  # [w_dim]
+    env_max = env_features.max(dim=0)[0]  # [w_dim]
+
+    # Sobol 샘플을 실제 환경 범위로 스케일
+    sobol_scaled = sobol_samples * (env_max - env_min) + env_min  # [n_w, w_dim]
+
+    # 각 Sobol 샘플에 가장 가까운 실제 이미지 찾기
+    w_indices = []
+    selected_indices_set = set()  # 중복 방지
+
+    for i in range(n_w):
+        target_env = sobol_scaled[i]  # [w_dim]
+
+        # 모든 환경과의 거리 계산
+        distances = torch.norm(env_features - target_env, dim=1)  # [N]
+
+        # 아직 선택 안 된 것 중 가장 가까운 것 선택
+        sorted_indices = torch.argsort(distances)
+        for idx in sorted_indices:
+            idx_val = idx.item()
+            if idx_val not in selected_indices_set:
+                w_indices.append(idx_val)
+                selected_indices_set.add(idx_val)
+                break
+
+    w_indices = torch.tensor(w_indices, dtype=torch.long, device=env_features.device)
     w_set = env_features[w_indices]
 
     return w_set, w_indices
@@ -558,64 +618,100 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
 
 
 def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
-                           n_iterations=30, n_initial=15, alpha=0.3, n_w=15):
+                           n_iterations=30, n_initial=15, alpha=0.3, n_w=15,
+                           env_file="environment_top6.json", resume_from=None):
     """
     BoRisk 알고리즘 완전 구현
 
     핵심 원리:
-    1. 환경 벡터 사전 추출 (모든 이미지)
+    1. 환경 벡터 사전 추출 (모든 이미지 - JSON에서 로드)
     2. w_set 샘플링 (매 iteration마다 n_w개)
-    3. GP 모델: (x, w) → y 학습
+    3. GP 모델: (x, w) → y 학습 (15D = 9 params + 6 env)
     4. qMFKG 획득 함수 + CVaR objective
     5. 매 iteration마다 w_set만 평가 (113개 아님!)
     """
     print("\n" + "="*60)
-    print(f"BoRisk CVaR Optimization")
+    print(f"BoRisk CVaR Optimization (6D Environment)")
+    print(f"Environment file: {env_file}")
     print(f"Total images: {len(images_data)}")
     print(f"CVaR α: {alpha} (worst {int(alpha*100)}%)")
     print(f"w_set size: {n_w}")
     print("="*60)
 
     # ===== Phase 0: 환경 벡터 사전 추출 =====
-    print(f"\n[Phase 0] Environment feature extraction")
-    all_env_features = extract_all_environments(images_data)
+    print(f"\n[Phase 0] Environment feature extraction (Top 6 features)")
+    all_env_features = extract_all_environments(images_data, env_file=env_file)
 
-    # ===== Phase 1: 초기 샘플링 =====
-    print(f"\n[Phase 1] Initial sampling ({n_initial} samples)")
-    print(f"  - Each sample evaluated on {n_w} environments")
-    print(f"  - Total evaluations: {n_initial * n_w}")
+    # ===== Resume from checkpoint if specified =====
+    start_iteration = 0
+    best_cvar_history = []
 
-    sobol = SobolEngine(dimension=8, scramble=True)  # 8D: AirLine 6D + RANSAC 2D
-    X_init = sobol.draw(n_initial).to(dtype=DTYPE, device=DEVICE)
-    X_init = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * X_init
+    if resume_from:
+        resume_dir = Path(resume_from)
+        if not resume_dir.exists():
+            print(f"\n⚠️ Warning: Resume directory not found: {resume_from}")
+            print(f"  Starting from scratch...\n")
+            resume_from = None
+        else:
+            checkpoint = load_checkpoint(resume_dir)
+            if checkpoint:
+                print(f"\n[Resume] Loading from checkpoint...")
+                print(f"  Last iteration: {checkpoint['iteration']}")
 
-    # 초기 샘플링: 각 x에 대해 w_set 평가
-    train_X_params = []  # x만 저장 (9D)
-    train_X_full = []    # (x, w) concat (15D)
-    train_Y = []
-    init_w_indices_list = []  # 각 초기 샘플의 w_indices 저장
+                # Load data
+                train_X_full = torch.tensor(checkpoint['train_X_full'], dtype=DTYPE, device=DEVICE)
+                train_Y = torch.tensor(checkpoint['train_Y'], dtype=DTYPE, device=DEVICE)
+                best_cvar_history = checkpoint['best_cvar_history']
+                start_iteration = checkpoint['iteration']
 
-    for i, x in enumerate(X_init):
-        # w_set 샘플링 (초기에는 고정된 seed 사용)
-        w_set, w_indices = sample_w_set(all_env_features, n_w=n_w, seed=i)
-        init_w_indices_list.append(w_indices)
+                print(f"  Loaded {len(train_X_full)} training points")
+                print(f"  Best CVaR so far: {max(best_cvar_history):.4f}")
+                print(f"  Resuming from iteration {start_iteration + 1}")
 
-        # w_set에 대해서만 평가
-        scores = evaluate_on_w_set(x.unsqueeze(0), images_data, yolo_detector, w_indices)
+                # Skip initialization
+                train_X_params = train_X_full[:, :9]  # Extract param part
+            else:
+                print(f"\n⚠️ Warning: No checkpoint found in {resume_from}")
+                print(f"  Starting from scratch...\n")
+                resume_from = None
 
-        # 각 (x, w) 쌍을 만들어서 저장
-        for j in range(n_w):
-            x_w = torch.cat([x, w_set[j]])  # [9+6=15]
-            train_X_full.append(x_w)
-            train_X_params.append(x.clone())
-        train_Y.append(scores)
+    if not resume_from:
+        # ===== Phase 1: 초기 샘플링 =====
+        print(f"\n[Phase 1] Initial sampling ({n_initial} samples)")
+        print(f"  - Each sample evaluated on {n_w} environments")
+        print(f"  - Total evaluations: {n_initial * n_w}")
 
-        cvar = compute_cvar_from_scores(scores.squeeze(-1), alpha)
-        print(f"Init {i+1}/{n_initial}: CVaR={cvar:.4f}, mean={scores.mean():.4f}")
+        sobol = SobolEngine(dimension=8, scramble=True)  # 8D: AirLine 6D + RANSAC 2D
+        X_init = sobol.draw(n_initial).to(dtype=DTYPE, device=DEVICE)
+        X_init = BOUNDS[0] + (BOUNDS[1] - BOUNDS[0]) * X_init
 
-    train_X_full = torch.stack(train_X_full)      # [n_initial * n_w, 15]
-    train_X_params = torch.stack(train_X_params)  # [n_initial * n_w, 9]
-    train_Y = torch.cat(train_Y)                  # [n_initial * n_w, 1]
+        # 초기 샘플링: 각 x에 대해 w_set 평가
+        train_X_params = []  # x만 저장 (9D)
+        train_X_full = []    # (x, w) concat (15D)
+        train_Y = []
+        init_w_indices_list = []  # 각 초기 샘플의 w_indices 저장
+
+        for i, x in enumerate(X_init):
+            # w_set 샘플링 (초기에는 고정된 seed 사용)
+            w_set, w_indices = sample_w_set(all_env_features, n_w=n_w, seed=i)
+            init_w_indices_list.append(w_indices)
+
+            # w_set에 대해서만 평가
+            scores = evaluate_on_w_set(x.unsqueeze(0), images_data, yolo_detector, w_indices)
+
+            # 각 (x, w) 쌍을 만들어서 저장
+            for j in range(n_w):
+                x_w = torch.cat([x, w_set[j]])  # [9+6=15]
+                train_X_full.append(x_w)
+                train_X_params.append(x.clone())
+            train_Y.append(scores)
+
+            cvar = compute_cvar_from_scores(scores.squeeze(-1), alpha)
+            print(f"Init {i+1}/{n_initial}: CVaR={cvar:.4f}, mean={scores.mean():.4f}")
+
+        train_X_full = torch.stack(train_X_full)      # [n_initial * n_w, 15]
+        train_X_params = torch.stack(train_X_params)  # [n_initial * n_w, 9]
+        train_Y = torch.cat(train_Y)                  # [n_initial * n_w, 1]
 
     # ===== Phase 2: Y 값 정규화 =====
     Y_mean = train_Y.mean()
@@ -657,20 +753,28 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         best_cvar_history.append(cvar)
     print(f"  Initial best CVaR: {max(best_cvar_history):.4f}")
 
-    # 로그 디렉토리 생성 (타임스탬프별로 분리)
+    # 로그 디렉토리 생성 (resume인 경우 기존 디렉토리 사용)
     import datetime
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = Path("logs") / f"run_{timestamp}"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    print(f"  Logs will be saved to: {log_dir}")
+    if resume_from:
+        log_dir = Path(resume_from)
+        timestamp = log_dir.name.split("_", 1)[1]  # Extract timestamp from dir name
+        print(f"  Logs will continue in: {log_dir}")
+    else:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_dir = Path("logs") / f"run_{timestamp}"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        print(f"  Logs will be saved to: {log_dir}")
 
     # ===== Phase 5: BO 루프 (BoRisk!) =====
     print(f"\n[Phase 4] BO iterations (BoRisk)")
     print("-"*60)
 
-    for iteration in range(n_iterations):
-        # 5.1: 새로운 w_set 샘플링 (매 iteration마다)
-        w_set, w_indices = sample_w_set(all_env_features, n_w=n_w)
+    # Resume인 경우 start_iteration부터, 아니면 0부터
+    total_iterations = start_iteration + n_iterations if resume_from else n_iterations
+
+    for iteration in range(start_iteration, total_iterations):
+        # 5.1: 새로운 w_set 샘플링 (매 iteration마다 Sobol sequence)
+        w_set, w_indices = sample_w_set(all_env_features, n_w=n_w, seed=iteration)
 
         # 5.2: BoRisk Knowledge Gradient 획득 함수 (논문 구현!)
         try:
@@ -842,7 +946,7 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         current_best = max(best_cvar_history)
         improvement = new_cvar - current_best if len(best_cvar_history) > 1 else 0.0
 
-        print(f"Iter {iteration+1}/{n_iterations} ({acq_name}): CVaR={new_cvar:.4f}, Best={current_best:.4f} ({improvement:+.4f})")
+        print(f"Iter {iteration+1}/{total_iterations} ({acq_name}): CVaR={new_cvar:.4f}, Best={current_best:.4f} ({improvement:+.4f})")
 
         # 5.11: 메모리 명시적 해제 (강화 버전 - 13번/36번 벽 통과)
         # 매 iteration 끝: GPU 동기화 + 캐시 정리
@@ -902,6 +1006,7 @@ if __name__ == "__main__":
     parser.add_argument("--image_dir", default="../dataset/images/test", help="Image directory")
     parser.add_argument("--gt_file", default="../dataset/ground_truth.json", help="Ground truth JSON")
     parser.add_argument("--yolo_model", default="models/best.pt", help="YOLO model path")
+    parser.add_argument("--env_file", default="environment_top6.json", help="Environment features JSON (6D)")
     parser.add_argument("--iterations", type=int, default=20, help="BO iterations")
     parser.add_argument("--n_initial", type=int, default=10, help="Initial samples")
     parser.add_argument("--n_w", type=int, default=15, help="w_set size (BoRisk)")
@@ -909,6 +1014,7 @@ if __name__ == "__main__":
     parser.add_argument("--complete_only", action="store_true", help="Use only complete GT images")
     parser.add_argument("--n_augment", type=int, default=0, help="Number of augmentations per image")
     parser.add_argument("--max_images", type=int, default=None, help="Limit number of images (for fast testing)")
+    parser.add_argument("--resume_from", type=str, default=None, help="Resume from log directory (e.g., logs/run_20251114_044828)")
     args = parser.parse_args()
     
     # GT 파일 확인
@@ -961,7 +1067,9 @@ if __name__ == "__main__":
         n_iterations=args.iterations,
         n_initial=args.n_initial,
         alpha=args.alpha,
-        n_w=args.n_w
+        n_w=args.n_w,
+        env_file=args.env_file,
+        resume_from=args.resume_from
     )
     
     # 결과 출력

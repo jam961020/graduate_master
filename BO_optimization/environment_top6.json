@@ -1,0 +1,906 @@
+{
+  "WIN_20250604_14_01_48_Pro": {
+    "local_contrast": 0.12268392965718228,
+    "clip_rough": 0.254638671875,
+    "brightness": 0.44026826947693887,
+    "clip_smooth": 0.2496337890625,
+    "gradient_strength": 0.15080285986244138,
+    "edge_density": 0.9938556067588326
+  },
+  "WIN_20250604_14_05_41_Pro": {
+    "local_contrast": 0.16510346168102127,
+    "clip_rough": 0.253173828125,
+    "brightness": 0.7726978910928572,
+    "clip_smooth": 0.2529296875,
+    "gradient_strength": 0.19642817676230684,
+    "edge_density": 0.9689863784809062
+  },
+  "WIN_20250604_14_14_31_Pro": {
+    "local_contrast": 0.11603669534957435,
+    "clip_rough": 0.240966796875,
+    "brightness": 0.6672554326060489,
+    "clip_smooth": 0.2476806640625,
+    "gradient_strength": 0.13253261453806048,
+    "edge_density": 0.9968601819812892
+  },
+  "WIN_20250604_14_20_07_Pro": {
+    "local_contrast": 0.1943948697829766,
+    "clip_rough": 0.241943359375,
+    "brightness": 0.3598807463910918,
+    "clip_smooth": 0.258056640625,
+    "gradient_strength": 0.2596602580664474,
+    "edge_density": 0.8645675648400444
+  },
+  "WIN_20250604_14_29_14_Pro": {
+    "local_contrast": 0.16355250651758252,
+    "clip_rough": 0.271240234375,
+    "brightness": 0.6089455331709595,
+    "clip_smooth": 0.260986328125,
+    "gradient_strength": 0.20200040114573914,
+    "edge_density": 0.9424310608962083
+  },
+  "WIN_20250604_14_32_50_Pro": {
+    "local_contrast": 0.11102715904661321,
+    "clip_rough": 0.26513671875,
+    "brightness": 0.5913587270292846,
+    "clip_smooth": 0.26318359375,
+    "gradient_strength": 0.14458750463319905,
+    "edge_density": 0.8779296007391745
+  },
+  "WIN_20250604_14_37_47_Pro": {
+    "local_contrast": 0.14995488462805553,
+    "clip_rough": 0.250732421875,
+    "brightness": 0.4322743070131252,
+    "clip_smooth": 0.2548828125,
+    "gradient_strength": 0.1853971811478188,
+    "edge_density": 0.8104633119042342
+  },
+  "WIN_20250604_16_04_39_Pro": {
+    "local_contrast": 0.309481210498013,
+    "clip_rough": 0.26611328125,
+    "brightness": 0.49802264851485145,
+    "clip_smooth": 0.2470703125,
+    "gradient_strength": 0.5067147516762852,
+    "edge_density": 0.8213069306930694
+  },
+  "WIN_20250604_16_10_32_Pro": {
+    "local_contrast": 0.21369752775707807,
+    "clip_rough": 0.25048828125,
+    "brightness": 0.7023599510368663,
+    "clip_smooth": 0.251953125,
+    "gradient_strength": 0.26561025456268744,
+    "edge_density": 0.8881570898413604
+  },
+  "WIN_20250604_16_19_23_Pro": {
+    "local_contrast": 0.20406619365405515,
+    "clip_rough": 0.285888671875,
+    "brightness": 0.6759262050869318,
+    "clip_smooth": 0.26904296875,
+    "gradient_strength": 0.42246591517352994,
+    "edge_density": 0.8916399236300118
+  },
+  "WIN_20250604_16_26_11_Pro": {
+    "local_contrast": 0.117150495618155,
+    "clip_rough": 0.278564453125,
+    "brightness": 0.5004490705111193,
+    "clip_smooth": 0.254150390625,
+    "gradient_strength": 0.23625977214521907,
+    "edge_density": 0.8370574810254232
+  },
+  "WIN_20250605_09_49_10_Pro": {
+    "local_contrast": 0.09193724612192193,
+    "clip_rough": 0.2548828125,
+    "brightness": 0.6293146491691802,
+    "clip_smooth": 0.26513671875,
+    "gradient_strength": 0.1729320748137461,
+    "edge_density": 0.9725224519632414
+  },
+  "WIN_20250605_09_56_54_Pro": {
+    "local_contrast": 0.17054632950106147,
+    "clip_rough": 0.2529296875,
+    "brightness": 0.5137955519322455,
+    "clip_smooth": 0.26171875,
+    "gradient_strength": 0.2140577293481577,
+    "edge_density": 0.9471932870370371
+  },
+  "WIN_20250605_10_04_59_Pro": {
+    "local_contrast": 0.329697758811195,
+    "clip_rough": 0.25048828125,
+    "brightness": 0.6213286680734855,
+    "clip_smooth": 0.259765625,
+    "gradient_strength": 0.44774816370992326,
+    "edge_density": 0.848857994041708
+  },
+  "WIN_20250605_10_16_26_Pro": {
+    "local_contrast": 0.14518950726566046,
+    "clip_rough": 0.257568359375,
+    "brightness": 0.446836119328316,
+    "clip_smooth": 0.262939453125,
+    "gradient_strength": 0.19187298353164553,
+    "edge_density": 0.9035106799495367
+  },
+  "WIN_20250605_10_19_36_Pro": {
+    "local_contrast": 0.15804080716347496,
+    "clip_rough": 0.26806640625,
+    "brightness": 0.3688997564935065,
+    "clip_smooth": 0.2646484375,
+    "gradient_strength": 0.2104831446068023,
+    "edge_density": 0.8765367965367965
+  },
+  "WIN_20250605_10_32_15_Pro": {
+    "local_contrast": 0.2211090744187109,
+    "clip_rough": 0.2452392578125,
+    "brightness": 0.33412094358927624,
+    "clip_smooth": 0.25927734375,
+    "gradient_strength": 0.3022106652282002,
+    "edge_density": 0.8742073516523174
+  },
+  "WIN_20250605_10_47_30_Pro": {
+    "local_contrast": 0.29130413774059466,
+    "clip_rough": 0.230712890625,
+    "brightness": 0.15969707045904102,
+    "clip_smooth": 0.2379150390625,
+    "gradient_strength": 0.4816069303212761,
+    "edge_density": 0.5902182782537739
+  },
+  "WIN_20250605_11_05_45_Pro": {
+    "local_contrast": 0.12406323398968472,
+    "clip_rough": 0.21435546875,
+    "brightness": 0.6077038855290002,
+    "clip_smooth": 0.2529296875,
+    "gradient_strength": 0.14795456230447893,
+    "edge_density": 1.0
+  },
+  "WIN_20250717_14_31_42_Pro_welding_debug": {
+    "local_contrast": 0.25861665749465956,
+    "clip_rough": 0.256591796875,
+    "brightness": 0.5412545408788516,
+    "clip_smooth": 0.2435302734375,
+    "gradient_strength": 0.3403536700449735,
+    "edge_density": 0.9092608326253186
+  },
+  "WIN_20250717_14_31_47_Pro_welding_debug": {
+    "local_contrast": 0.2819462550607191,
+    "clip_rough": 0.28759765625,
+    "brightness": 0.5713749324458044,
+    "clip_smooth": 0.255859375,
+    "gradient_strength": 0.38035535550944244,
+    "edge_density": 0.8729279289383369
+  },
+  "WIN_20250717_14_31_50_Pro_welding_debug": {
+    "local_contrast": 0.13814542078556533,
+    "clip_rough": 0.27294921875,
+    "brightness": 0.6114305248431091,
+    "clip_smooth": 0.2437744140625,
+    "gradient_strength": 0.19099641219699873,
+    "edge_density": 0.9357533204205866
+  },
+  "WIN_20250717_14_31_53_Pro_welding_debug": {
+    "local_contrast": 0.17228123003331874,
+    "clip_rough": 0.256103515625,
+    "brightness": 0.599027202560241,
+    "clip_smooth": 0.255126953125,
+    "gradient_strength": 0.2477924067276556,
+    "edge_density": 0.9131182795698924
+  },
+  "WIN_20250717_14_31_57_Pro_welding_debug": {
+    "local_contrast": 0.2553817075470871,
+    "clip_rough": 0.26953125,
+    "brightness": 0.654604712513545,
+    "clip_smooth": 0.244384765625,
+    "gradient_strength": 0.31617958899636817,
+    "edge_density": 0.9653963321134306
+  },
+  "WIN_20250717_14_32_00_Pro_welding_debug": {
+    "local_contrast": 0.17547001702637452,
+    "clip_rough": 0.248779296875,
+    "brightness": 0.6635481475525293,
+    "clip_smooth": 0.24755859375,
+    "gradient_strength": 0.20304428724772122,
+    "edge_density": 0.9937961475093058
+  },
+  "WIN_20250717_14_32_04_Pro_welding_debug": {
+    "local_contrast": 0.2504079881651325,
+    "clip_rough": 0.2705078125,
+    "brightness": 0.6038741977714781,
+    "clip_smooth": 0.2646484375,
+    "gradient_strength": 0.3371566806672382,
+    "edge_density": 0.8924324749980314
+  },
+  "WIN_20250717_14_32_08_Pro_welding_debug": {
+    "local_contrast": 0.19756282660504337,
+    "clip_rough": 0.257568359375,
+    "brightness": 0.6454037468366618,
+    "clip_smooth": 0.246337890625,
+    "gradient_strength": 0.2481469713250757,
+    "edge_density": 0.9884381925040948
+  },
+  "WIN_20250717_14_32_18_Pro_welding_debug": {
+    "local_contrast": 0.06888828091776723,
+    "clip_rough": 0.273193359375,
+    "brightness": 0.5935856510416666,
+    "clip_smooth": 0.24365234375,
+    "gradient_strength": 0.1006479978760052,
+    "edge_density": 0.9600666666666666
+  },
+  "WIN_20250717_14_38_49_Pro_welding_debug": {
+    "local_contrast": 0.24566632635583577,
+    "clip_rough": 0.254150390625,
+    "brightness": 0.4297613987882196,
+    "clip_smooth": 0.253662109375,
+    "gradient_strength": 0.3650916861834647,
+    "edge_density": 0.7221597300337458
+  },
+  "WIN_20250717_14_38_53_Pro_welding_debug": {
+    "local_contrast": 0.19543697635664098,
+    "clip_rough": 0.264892578125,
+    "brightness": 0.4288229558591313,
+    "clip_smooth": 0.2587890625,
+    "gradient_strength": 0.26458640672236367,
+    "edge_density": 0.7799048658764816
+  },
+  "WIN_20250717_14_38_55_Pro_welding_debug": {
+    "local_contrast": 0.23403866061284792,
+    "clip_rough": 0.25927734375,
+    "brightness": 0.43437671139101863,
+    "clip_smooth": 0.250732421875,
+    "gradient_strength": 0.31317575795969843,
+    "edge_density": 0.7954251265014981
+  },
+  "WIN_20250717_14_39_19_Pro_welding_debug": {
+    "local_contrast": 0.2301947621218844,
+    "clip_rough": 0.2406005859375,
+    "brightness": 0.46276621659242767,
+    "clip_smooth": 0.246826171875,
+    "gradient_strength": 0.2679885095506983,
+    "edge_density": 0.7915569953431869
+  },
+  "WIN_20250717_14_39_21_Pro_welding_debug": {
+    "local_contrast": 0.22857671031564106,
+    "clip_rough": 0.2420654296875,
+    "brightness": 0.46306847578642385,
+    "clip_smooth": 0.245361328125,
+    "gradient_strength": 0.29138675281988907,
+    "edge_density": 0.8144315673289183
+  },
+  "WIN_20250717_14_39_24_Pro_welding_debug": {
+    "local_contrast": 0.22840307840103866,
+    "clip_rough": 0.24951171875,
+    "brightness": 0.4711787656619968,
+    "clip_smooth": 0.25146484375,
+    "gradient_strength": 0.27253177215469265,
+    "edge_density": 0.8087016574585636
+  },
+  "WIN_20250717_14_39_27_Pro_welding_debug": {
+    "local_contrast": 0.23802170899828212,
+    "clip_rough": 0.2479248046875,
+    "brightness": 0.4919825001426086,
+    "clip_smooth": 0.2479248046875,
+    "gradient_strength": 0.2820559291036492,
+    "edge_density": 0.803009992108991
+  },
+  "WIN_20250717_14_40_56_Pro_welding_debug": {
+    "local_contrast": 0.21533036492678653,
+    "clip_rough": 0.25439453125,
+    "brightness": 0.4792885480900252,
+    "clip_smooth": 0.252197265625,
+    "gradient_strength": 0.26169869868049356,
+    "edge_density": 0.8700893785075868
+  },
+  "WIN_20250717_14_40_59_Pro_welding_debug": {
+    "local_contrast": 0.2247667835792509,
+    "clip_rough": 0.2364501953125,
+    "brightness": 0.4809811973576016,
+    "clip_smooth": 0.2392578125,
+    "gradient_strength": 0.2737824314471587,
+    "edge_density": 0.8408782807742738
+  },
+  "WIN_20250717_14_41_05_Pro_welding_debug": {
+    "local_contrast": 0.2534324745045006,
+    "clip_rough": 0.25146484375,
+    "brightness": 0.49226847815557495,
+    "clip_smooth": 0.2490234375,
+    "gradient_strength": 0.33752142189146467,
+    "edge_density": 0.7720762236891269
+  },
+  "WIN_20250717_14_41_08_Pro_welding_debug": {
+    "local_contrast": 0.24896190728074713,
+    "clip_rough": 0.24951171875,
+    "brightness": 0.4861681289905271,
+    "clip_smooth": 0.255126953125,
+    "gradient_strength": 0.32951741690782915,
+    "edge_density": 0.7726521164021164
+  },
+  "WIN_20250717_14_41_17_Pro_welding_debug": {
+    "local_contrast": 0.1686323434049364,
+    "clip_rough": 0.2391357421875,
+    "brightness": 0.6108892330356489,
+    "clip_smooth": 0.244140625,
+    "gradient_strength": 0.1899511960923579,
+    "edge_density": 0.879364614596296
+  },
+  "WIN_20250717_14_41_18_Pro_welding_debug": {
+    "local_contrast": 0.2242243216595293,
+    "clip_rough": 0.2484130859375,
+    "brightness": 0.5022167589355089,
+    "clip_smooth": 0.24951171875,
+    "gradient_strength": 0.27668424266344266,
+    "edge_density": 0.8208236208236208
+  },
+  "WIN_20250717_14_41_23_Pro_welding_debug": {
+    "local_contrast": 0.24246359051435096,
+    "clip_rough": 0.2095947265625,
+    "brightness": 0.5046008741999247,
+    "clip_smooth": 0.236572265625,
+    "gradient_strength": 0.30711701052091483,
+    "edge_density": 0.7435993975903614
+  },
+  "WIN_20250717_14_41_25_Pro_welding_debug": {
+    "local_contrast": 0.19699528476726555,
+    "clip_rough": 0.2225341796875,
+    "brightness": 0.5195639507229832,
+    "clip_smooth": 0.24951171875,
+    "gradient_strength": 0.23198204800329777,
+    "edge_density": 0.942741175617888
+  },
+  "WIN_20250717_14_41_28_Pro_welding_debug": {
+    "local_contrast": 0.24527658485771509,
+    "clip_rough": 0.2666015625,
+    "brightness": 0.4675120682346441,
+    "clip_smooth": 0.255859375,
+    "gradient_strength": 0.3147282002260181,
+    "edge_density": 0.7662322816643805
+  },
+  "WIN_20250717_14_41_33_Pro_welding_debug": {
+    "local_contrast": 0.25039076328092663,
+    "clip_rough": 0.259521484375,
+    "brightness": 0.47280890216968974,
+    "clip_smooth": 0.25048828125,
+    "gradient_strength": 0.3107821518700031,
+    "edge_density": 0.7683073965767572
+  },
+  "WIN_20250717_14_41_35_Pro_welding_debug": {
+    "local_contrast": 0.24786228045734127,
+    "clip_rough": 0.25048828125,
+    "brightness": 0.46494789556320903,
+    "clip_smooth": 0.259521484375,
+    "gradient_strength": 0.3166352782401787,
+    "edge_density": 0.7441247974068071
+  },
+  "WIN_20250717_14_41_38_Pro_welding_debug": {
+    "local_contrast": 0.25685254826303977,
+    "clip_rough": 0.242431640625,
+    "brightness": 0.48242535930113284,
+    "clip_smooth": 0.24755859375,
+    "gradient_strength": 0.32683964772877205,
+    "edge_density": 0.8136298550205835
+  },
+  "WIN_20250717_14_41_42_Pro_welding_debug": {
+    "local_contrast": 0.2652524126932816,
+    "clip_rough": 0.2230224609375,
+    "brightness": 0.40546371575263085,
+    "clip_smooth": 0.2398681640625,
+    "gradient_strength": 0.32552582678784275,
+    "edge_density": 0.7897920604914934
+  },
+  "WIN_20250717_14_41_45_Pro_welding_debug": {
+    "local_contrast": 0.22185177082433788,
+    "clip_rough": 0.237060546875,
+    "brightness": 0.45495914875367593,
+    "clip_smooth": 0.2509765625,
+    "gradient_strength": 0.2546750906604015,
+    "edge_density": 0.8548289221864351
+  },
+  "WIN_20250717_14_41_58_Pro_welding_debug": {
+    "local_contrast": 0.24792173535116357,
+    "clip_rough": 0.2266845703125,
+    "brightness": 0.3986171397394944,
+    "clip_smooth": 0.24658203125,
+    "gradient_strength": 0.28453048643145473,
+    "edge_density": 0.7975987222558792
+  },
+  "WIN_20250717_14_42_01_Pro_welding_debug": {
+    "local_contrast": 0.24296581296675576,
+    "clip_rough": 0.2469482421875,
+    "brightness": 0.3765896488745557,
+    "clip_smooth": 0.2470703125,
+    "gradient_strength": 0.2738164041293391,
+    "edge_density": 0.8093984467552982
+  },
+  "WIN_20250717_14_42_05_Pro_welding_debug": {
+    "local_contrast": 0.27958661997088735,
+    "clip_rough": 0.234619140625,
+    "brightness": 0.3863860917625681,
+    "clip_smooth": 0.248779296875,
+    "gradient_strength": 0.34480496610747835,
+    "edge_density": 0.7359176256814053
+  },
+  "WIN_20250717_14_42_08_Pro_welding_debug": {
+    "local_contrast": 0.27776470844127926,
+    "clip_rough": 0.2369384765625,
+    "brightness": 0.3712322427081759,
+    "clip_smooth": 0.2471923828125,
+    "gradient_strength": 0.3380892015699529,
+    "edge_density": 0.7186035967961313
+  },
+  "WIN_20250717_14_42_11_Pro_welding_debug": {
+    "local_contrast": 0.254375345308275,
+    "clip_rough": 0.232421875,
+    "brightness": 0.375522205150717,
+    "clip_smooth": 0.257568359375,
+    "gradient_strength": 0.2885176894151284,
+    "edge_density": 0.7579748317237343
+  },
+  "WIN_20250717_14_42_18_Pro_welding_debug": {
+    "local_contrast": 0.286877204955303,
+    "clip_rough": 0.22119140625,
+    "brightness": 0.847386295936285,
+    "clip_smooth": 0.2432861328125,
+    "gradient_strength": 0.343914782535541,
+    "edge_density": 0.9589238680546845
+  },
+  "WIN_20250717_14_42_21_Pro_welding_debug": {
+    "local_contrast": 0.20422786346183985,
+    "clip_rough": 0.2369384765625,
+    "brightness": 0.796975107871339,
+    "clip_smooth": 0.243896484375,
+    "gradient_strength": 0.2660383947803652,
+    "edge_density": 0.8742154811715481
+  },
+  "WIN_20250717_14_42_23_Pro_welding_debug": {
+    "local_contrast": 0.18990723597561188,
+    "clip_rough": 0.228759765625,
+    "brightness": 0.6130246954449152,
+    "clip_smooth": 0.249267578125,
+    "gradient_strength": 0.2573954394970438,
+    "edge_density": 0.8250605326876513
+  },
+  "WIN_20250717_14_42_28_Pro_welding_debug": {
+    "local_contrast": 0.13724163908417208,
+    "clip_rough": 0.2427978515625,
+    "brightness": 0.5227591093161152,
+    "clip_smooth": 0.250732421875,
+    "gradient_strength": 0.16403286384200247,
+    "edge_density": 0.8771772445241833
+  },
+  "WIN_20250717_14_42_31_Pro_welding_debug": {
+    "local_contrast": 0.12024794551816571,
+    "clip_rough": 0.267822265625,
+    "brightness": 0.5216738937087537,
+    "clip_smooth": 0.2490234375,
+    "gradient_strength": 0.16798326045162248,
+    "edge_density": 0.8578077173967584
+  },
+  "WIN_20250717_14_42_34_Pro_welding_debug": {
+    "local_contrast": 0.1216346735787649,
+    "clip_rough": 0.263916015625,
+    "brightness": 0.5146766116004398,
+    "clip_smooth": 0.25244140625,
+    "gradient_strength": 0.17765741501486726,
+    "edge_density": 0.8770911378649661
+  },
+  "WIN_20250717_14_42_37_Pro_welding_debug": {
+    "local_contrast": 0.20245818706405314,
+    "clip_rough": 0.2489013671875,
+    "brightness": 0.5845756602649375,
+    "clip_smooth": 0.249267578125,
+    "gradient_strength": 0.27454997453843905,
+    "edge_density": 0.8313195137272291
+  },
+  "WIN_20250717_14_42_40_Pro_welding_debug": {
+    "local_contrast": 0.22345846694837873,
+    "clip_rough": 0.2462158203125,
+    "brightness": 0.5423176749790801,
+    "clip_smooth": 0.250732421875,
+    "gradient_strength": 0.326249994652214,
+    "edge_density": 0.8714927335758321
+  },
+  "WIN_20250717_14_42_43_Pro_welding_debug": {
+    "local_contrast": 0.2039636922417819,
+    "clip_rough": 0.256591796875,
+    "brightness": 0.5159535345047652,
+    "clip_smooth": 0.243408203125,
+    "gradient_strength": 0.2820590148380396,
+    "edge_density": 0.859853641933288
+  },
+  "WIN_20250717_14_42_46_Pro_welding_debug": {
+    "local_contrast": 0.17261315039467098,
+    "clip_rough": 0.25439453125,
+    "brightness": 0.5100491500094424,
+    "clip_smooth": 0.251220703125,
+    "gradient_strength": 0.22571273975440762,
+    "edge_density": 0.8826973082119147
+  },
+  "WIN_20250717_14_42_48_Pro_welding_debug": {
+    "local_contrast": 0.12714676119627372,
+    "clip_rough": 0.25390625,
+    "brightness": 0.43542915616205446,
+    "clip_smooth": 0.259521484375,
+    "gradient_strength": 0.19226485425800507,
+    "edge_density": 0.917734686423047
+  },
+  "WIN_20250717_14_42_51_Pro_welding_debug": {
+    "local_contrast": 0.11987309928691507,
+    "clip_rough": 0.2587890625,
+    "brightness": 0.4906536984874209,
+    "clip_smooth": 0.255859375,
+    "gradient_strength": 0.18126905694329842,
+    "edge_density": 0.9190596846846847
+  },
+  "WIN_20250717_14_42_57_Pro_welding_debug": {
+    "local_contrast": 0.17443947779201546,
+    "clip_rough": 0.273681640625,
+    "brightness": 0.47060501160918244,
+    "clip_smooth": 0.2462158203125,
+    "gradient_strength": 0.2645094374260567,
+    "edge_density": 0.8508781784818186
+  },
+  "WIN_20250717_14_43_01_Pro_welding_debug": {
+    "local_contrast": 0.1344763971184333,
+    "clip_rough": 0.251708984375,
+    "brightness": 0.47230680575801753,
+    "clip_smooth": 0.250244140625,
+    "gradient_strength": 0.21283757791981475,
+    "edge_density": 0.8703206997084548
+  },
+  "WIN_20250717_14_48_13_Pro_welding_debug": {
+    "local_contrast": 0.17395997688202727,
+    "clip_rough": 0.251708984375,
+    "brightness": 0.6629840569896944,
+    "clip_smooth": 0.2491455078125,
+    "gradient_strength": 0.2484466226648274,
+    "edge_density": 0.9470673514570527
+  },
+  "WIN_20250717_14_48_16_Pro_welding_debug": {
+    "local_contrast": 0.17939073175072562,
+    "clip_rough": 0.2327880859375,
+    "brightness": 0.6742937661902999,
+    "clip_smooth": 0.23974609375,
+    "gradient_strength": 0.23052696802876313,
+    "edge_density": 0.9707214071139362
+  },
+  "WIN_20250717_14_48_18_Pro_welding_debug": {
+    "local_contrast": 0.1521130505019408,
+    "clip_rough": 0.263427734375,
+    "brightness": 0.6658771672803538,
+    "clip_smooth": 0.255859375,
+    "gradient_strength": 0.20699092950573003,
+    "edge_density": 0.9681135764040465
+  },
+  "WIN_20250717_14_48_21_Pro_welding_debug": {
+    "local_contrast": 0.1354975406109384,
+    "clip_rough": 0.281005859375,
+    "brightness": 0.6778030873640533,
+    "clip_smooth": 0.255859375,
+    "gradient_strength": 0.18804076917732665,
+    "edge_density": 0.9678476617542876
+  },
+  "WIN_20250717_14_48_26_Pro_welding_debug": {
+    "local_contrast": 0.22271474449464881,
+    "clip_rough": 0.2509765625,
+    "brightness": 0.7145383012337303,
+    "clip_smooth": 0.240234375,
+    "gradient_strength": 0.28169853957493185,
+    "edge_density": 1.0
+  },
+  "WIN_20250717_14_48_29_Pro_welding_debug": {
+    "local_contrast": 0.22659849822013867,
+    "clip_rough": 0.252685546875,
+    "brightness": 0.7348364546932634,
+    "clip_smooth": 0.2391357421875,
+    "gradient_strength": 0.2767298746858099,
+    "edge_density": 0.9697874199184624
+  },
+  "WIN_20250717_14_48_33_Pro_welding_debug": {
+    "local_contrast": 0.13623528708996327,
+    "clip_rough": 0.2442626953125,
+    "brightness": 0.8763853059203669,
+    "clip_smooth": 0.249755859375,
+    "gradient_strength": 0.15311775624541368,
+    "edge_density": 1.0
+  },
+  "WIN_20250717_14_48_35_Pro_welding_debug": {
+    "local_contrast": 0.2637524358474657,
+    "clip_rough": 0.25537109375,
+    "brightness": 0.7377285111959255,
+    "clip_smooth": 0.249755859375,
+    "gradient_strength": 0.3478457342209888,
+    "edge_density": 0.9788101463462993
+  },
+  "WIN_20250717_14_48_44_Pro_welding_debug": {
+    "local_contrast": 0.2500438330163593,
+    "clip_rough": 0.240966796875,
+    "brightness": 0.7118596137797946,
+    "clip_smooth": 0.25048828125,
+    "gradient_strength": 0.29372172956115183,
+    "edge_density": 0.9836575740190198
+  },
+  "WIN_20250717_14_48_46_Pro_welding_debug": {
+    "local_contrast": 0.251088131979344,
+    "clip_rough": 0.2391357421875,
+    "brightness": 0.7324741077638672,
+    "clip_smooth": 0.2451171875,
+    "gradient_strength": 0.29772405250210293,
+    "edge_density": 0.9671361502347418
+  },
+  "WIN_20250717_14_48_52_Pro_welding_debug": {
+    "local_contrast": 0.14349312904444742,
+    "clip_rough": 0.2493896484375,
+    "brightness": 0.6822341425209457,
+    "clip_smooth": 0.25,
+    "gradient_strength": 0.1742287214942475,
+    "edge_density": 0.9689426040061633
+  },
+  "WIN_20250717_14_48_55_Pro_welding_debug": {
+    "local_contrast": 0.23121040421661615,
+    "clip_rough": 0.2437744140625,
+    "brightness": 0.7021673594695749,
+    "clip_smooth": 0.2337646484375,
+    "gradient_strength": 0.2795000471696263,
+    "edge_density": 0.9751083413917839
+  },
+  "WIN_20250717_14_49_00_Pro_welding_debug": {
+    "local_contrast": 0.21547881693949236,
+    "clip_rough": 0.250732421875,
+    "brightness": 0.7120149213778757,
+    "clip_smooth": 0.25,
+    "gradient_strength": 0.24964585329449335,
+    "edge_density": 0.9851408992378156
+  },
+  "WIN_20250717_14_49_16_Pro_welding_debug": {
+    "local_contrast": 0.22590933577854044,
+    "clip_rough": 0.2298583984375,
+    "brightness": 0.6756362270348362,
+    "clip_smooth": 0.237060546875,
+    "gradient_strength": 0.251731430023898,
+    "edge_density": 0.9669265296480037
+  },
+  "WIN_20250717_14_49_31_Pro_welding_debug": {
+    "local_contrast": 0.16270513634435768,
+    "clip_rough": 0.26123046875,
+    "brightness": 0.6165185397553516,
+    "clip_smooth": 0.25927734375,
+    "gradient_strength": 0.2069702162555079,
+    "edge_density": 0.9475753604193972
+  },
+  "WIN_20250717_14_49_36_Pro_welding_debug": {
+    "local_contrast": 0.2633002296859108,
+    "clip_rough": 0.244140625,
+    "brightness": 0.6831981472166331,
+    "clip_smooth": 0.2431640625,
+    "gradient_strength": 0.3217961483427343,
+    "edge_density": 0.945531776517692
+  },
+  "WIN_20250717_14_49_50_Pro_welding_debug": {
+    "local_contrast": 0.2897054548019367,
+    "clip_rough": 0.239990234375,
+    "brightness": 0.6436842944822557,
+    "clip_smooth": 0.2340087890625,
+    "gradient_strength": 0.36447931211692314,
+    "edge_density": 0.9829849295089936
+  },
+  "WIN_20250717_14_49_53_Pro_welding_debug": {
+    "local_contrast": 0.2974416414374983,
+    "clip_rough": 0.245361328125,
+    "brightness": 0.6103871314240084,
+    "clip_smooth": 0.253662109375,
+    "gradient_strength": 0.37297922453550214,
+    "edge_density": 0.964006483600305
+  },
+  "WIN_20250717_14_50_00_Pro_welding_debug": {
+    "local_contrast": 0.19681047768241655,
+    "clip_rough": 0.26708984375,
+    "brightness": 0.5797154096079138,
+    "clip_smooth": 0.2529296875,
+    "gradient_strength": 0.2453354386555988,
+    "edge_density": 0.9600838372915749
+  },
+  "WIN_20250717_14_50_04_Pro_welding_debug": {
+    "local_contrast": 0.1882292436537046,
+    "clip_rough": 0.2763671875,
+    "brightness": 0.6301523437500001,
+    "clip_smooth": 0.255859375,
+    "gradient_strength": 0.24531455077630893,
+    "edge_density": 0.9711842105263158
+  },
+  "WIN_20250717_14_50_07_Pro_welding_debug": {
+    "local_contrast": 0.12999232086568788,
+    "clip_rough": 0.25830078125,
+    "brightness": 0.6825373666019888,
+    "clip_smooth": 0.250244140625,
+    "gradient_strength": 0.1815441397339146,
+    "edge_density": 0.966044142614601
+  },
+  "WIN_20250717_14_50_14_Pro_welding_debug": {
+    "local_contrast": 0.1404397504310889,
+    "clip_rough": 0.260009765625,
+    "brightness": 0.6938080420197741,
+    "clip_smooth": 0.2486572265625,
+    "gradient_strength": 0.19946068859446645,
+    "edge_density": 0.9833333333333333
+  },
+  "WIN_20250717_14_50_17_Pro_welding_debug": {
+    "local_contrast": 0.2244637147247199,
+    "clip_rough": 0.235595703125,
+    "brightness": 0.7638640847094482,
+    "clip_smooth": 0.2371826171875,
+    "gradient_strength": 0.3202714244750128,
+    "edge_density": 0.9565217391304348
+  },
+  "WIN_20250717_14_55_26_Pro_welding_debug": {
+    "local_contrast": 0.28575149332889443,
+    "clip_rough": 0.25,
+    "brightness": 0.5155362698630669,
+    "clip_smooth": 0.259521484375,
+    "gradient_strength": 0.35146316995598814,
+    "edge_density": 0.8797119300464951
+  },
+  "WIN_20250717_14_55_31_Pro_welding_debug": {
+    "local_contrast": 0.2952929843934929,
+    "clip_rough": 0.2357177734375,
+    "brightness": 0.5378197725093699,
+    "clip_smooth": 0.2388916015625,
+    "gradient_strength": 0.3764645159583926,
+    "edge_density": 0.8498503733403062
+  },
+  "WIN_20250717_14_55_34_Pro_welding_debug": {
+    "local_contrast": 0.1870440531559978,
+    "clip_rough": 0.2822265625,
+    "brightness": 0.4106647550379363,
+    "clip_smooth": 0.2421875,
+    "gradient_strength": 0.25832335173562293,
+    "edge_density": 0.9191530824533221
+  },
+  "WIN_20250717_14_55_36_Pro_welding_debug": {
+    "local_contrast": 0.14746470684559784,
+    "clip_rough": 0.285400390625,
+    "brightness": 0.4449044268859317,
+    "clip_smooth": 0.2242431640625,
+    "gradient_strength": 0.19341776046934267,
+    "edge_density": 0.8824597359087378
+  },
+  "WIN_20250717_14_55_44_Pro_welding_debug": {
+    "local_contrast": 0.1880985380237068,
+    "clip_rough": 0.25439453125,
+    "brightness": 0.5299791676559574,
+    "clip_smooth": 0.250244140625,
+    "gradient_strength": 0.2191189275590601,
+    "edge_density": 0.9772067402925135
+  },
+  "WIN_20250717_14_55_47_Pro_welding_debug": {
+    "local_contrast": 0.24407431777346253,
+    "clip_rough": 0.25048828125,
+    "brightness": 0.5379504926970788,
+    "clip_smooth": 0.2445068359375,
+    "gradient_strength": 0.29599251687804695,
+    "edge_density": 0.8768840869681206
+  },
+  "WIN_20250717_14_55_49_Pro_welding_debug": {
+    "local_contrast": 0.17778708328777357,
+    "clip_rough": 0.25048828125,
+    "brightness": 0.47865674321514795,
+    "clip_smooth": 0.2381591796875,
+    "gradient_strength": 0.23192572770763725,
+    "edge_density": 0.9186711973531253
+  },
+  "WIN_20250717_14_55_52_Pro_welding_debug": {
+    "local_contrast": 0.1740481742459807,
+    "clip_rough": 0.264404296875,
+    "brightness": 0.4765516040825519,
+    "clip_smooth": 0.232666015625,
+    "gradient_strength": 0.2428973960901706,
+    "edge_density": 0.8744247633932447
+  },
+  "WIN_20250717_14_55_55_Pro_welding_debug": {
+    "local_contrast": 0.3003035389412539,
+    "clip_rough": 0.2449951171875,
+    "brightness": 0.52467079630847,
+    "clip_smooth": 0.241943359375,
+    "gradient_strength": 0.40221368125744056,
+    "edge_density": 0.8927223475274569
+  },
+  "WIN_20250717_14_56_06_Pro_welding_debug": {
+    "local_contrast": 0.2971837512806477,
+    "clip_rough": 0.2484130859375,
+    "brightness": 0.42244196366821896,
+    "clip_smooth": 0.231201171875,
+    "gradient_strength": 0.3681285005327766,
+    "edge_density": 0.8046936234957813
+  },
+  "WIN_20250717_14_56_09_Pro_welding_debug": {
+    "local_contrast": 0.26943348124005123,
+    "clip_rough": 0.2374267578125,
+    "brightness": 0.40999788801174875,
+    "clip_smooth": 0.2353515625,
+    "gradient_strength": 0.3216919169712043,
+    "edge_density": 0.849624060150376
+  },
+  "WIN_20250717_14_56_13_Pro_welding_debug": {
+    "local_contrast": 0.17843380746259385,
+    "clip_rough": 0.266357421875,
+    "brightness": 0.35801244711959945,
+    "clip_smooth": 0.2420654296875,
+    "gradient_strength": 0.22861608441249615,
+    "edge_density": 0.8717926088056531
+  },
+  "WIN_20250717_14_56_16_Pro_welding_debug": {
+    "local_contrast": 0.15515666974132863,
+    "clip_rough": 0.273681640625,
+    "brightness": 0.26454531083256194,
+    "clip_smooth": 0.2359619140625,
+    "gradient_strength": 0.1989273931359282,
+    "edge_density": 0.8936966788319016
+  },
+  "WIN_20250717_14_56_22_Pro_welding_debug": {
+    "local_contrast": 0.14483199228956362,
+    "clip_rough": 0.267333984375,
+    "brightness": 0.3181187211814378,
+    "clip_smooth": 0.2451171875,
+    "gradient_strength": 0.18840566821384278,
+    "edge_density": 0.8980877070007885
+  },
+  "WIN_20250717_14_56_30_Pro_welding_debug": {
+    "local_contrast": 0.22209356682109221,
+    "clip_rough": 0.26025390625,
+    "brightness": 0.5260017314342005,
+    "clip_smooth": 0.248779296875,
+    "gradient_strength": 0.2807984110577909,
+    "edge_density": 0.8737485424791926
+  },
+  "WIN_20250717_14_56_45_Pro_welding_debug": {
+    "local_contrast": 0.22877911163646225,
+    "clip_rough": 0.2435302734375,
+    "brightness": 0.47642395397753035,
+    "clip_smooth": 0.2431640625,
+    "gradient_strength": 0.2780323333780559,
+    "edge_density": 0.8780795002267117
+  },
+  "WIN_20250717_14_56_51_Pro_welding_debug": {
+    "local_contrast": 0.28896553876882325,
+    "clip_rough": 0.241943359375,
+    "brightness": 0.41201703835582204,
+    "clip_smooth": 0.2265625,
+    "gradient_strength": 0.37444848898233035,
+    "edge_density": 0.8247876061969016
+  },
+  "WIN_20250717_14_57_03_Pro_welding_debug": {
+    "local_contrast": 0.11201586222887971,
+    "clip_rough": 0.250732421875,
+    "brightness": 0.35463323314837647,
+    "clip_smooth": 0.25048828125,
+    "gradient_strength": 0.17469227078991578,
+    "edge_density": 0.8998766954377312
+  },
+  "WIN_20250717_14_57_11_Pro_welding_debug": {
+    "local_contrast": 0.148332813063286,
+    "clip_rough": 0.266357421875,
+    "brightness": 0.3765993362272264,
+    "clip_smooth": 0.2362060546875,
+    "gradient_strength": 0.2073227385761206,
+    "edge_density": 0.8525528005296792
+  },
+  "WIN_20250717_14_57_15_Pro_welding_debug": {
+    "local_contrast": 0.3331073867028181,
+    "clip_rough": 0.26416015625,
+    "brightness": 0.4862938247434714,
+    "clip_smooth": 0.2568359375,
+    "gradient_strength": 0.4745271371023902,
+    "edge_density": 0.7959443542482412
+  },
+  "WIN_20250717_14_57_40_Pro_welding_debug": {
+    "local_contrast": 0.2655578841616493,
+    "clip_rough": 0.253173828125,
+    "brightness": 0.6658999029754205,
+    "clip_smooth": 0.24462890625,
+    "gradient_strength": 0.33939116844126965,
+    "edge_density": 0.9234152652005174
+  },
+  "WIN_20250717_14_57_43_Pro_welding_debug": {
+    "local_contrast": 0.28241042107831693,
+    "clip_rough": 0.250732421875,
+    "brightness": 0.6686052538178826,
+    "clip_smooth": 0.238037109375,
+    "gradient_strength": 0.3623637610731909,
+    "edge_density": 0.9376401438257108
+  }
+}
