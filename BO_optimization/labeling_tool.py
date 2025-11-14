@@ -1,7 +1,8 @@
 """
-용접선 라벨링 GUI 툴
+용접선 라벨링 GUI 툴 (개선 버전)
 - 8개 핵심 좌표를 마우스 클릭으로 표시
 - 이미지별 저장 및 불러오기 지원
+- 모든 점 배치 후 클릭 시 가장 가까운 점 자동 이동
 """
 import cv2
 import json
@@ -59,7 +60,7 @@ class WeldingLabeler:
         self.window_name = "Welding Line Labeling Tool"
         self.help_text = [
             "=== Controls ===",
-            "Left Click: Place point",
+            "Left Click: Place point / Move nearest point (after all placed)",
             "Right Click: Remove last point",
             "SPACE: Next point",
             "ENTER: Save and next image",
@@ -198,7 +199,7 @@ class WeldingLabeler:
             cv2.putText(img, f"Next: {current_name}", (20, y_offset),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
         else:
-            cv2.putText(img, "All points placed!", (20, y_offset),
+            cv2.putText(img, "Click to move nearest point", (20, y_offset),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         y_offset += 30
         
@@ -223,17 +224,36 @@ class WeldingLabeler:
     def mouse_callback(self, event, x, y, flags, param):
         """마우스 콜백"""
         if event == cv2.EVENT_LBUTTONDOWN:
-            # 좌클릭: 포인트 추가
+            # 줌/팬 역변환
+            actual_x = int((x + self.pan_offset[0]) / self.zoom_level)
+            actual_y = int((y + self.pan_offset[1]) / self.zoom_level)
+            
             current_name = self.get_current_point_name()
+            
             if current_name:
-                # 줌/팬 역변환
-                actual_x = int((x + self.pan_offset[0]) / self.zoom_level)
-                actual_y = int((y + self.pan_offset[1]) / self.zoom_level)
-                
+                # 아직 찍을 포인트가 남음: 새 포인트 추가
                 self.current_points[current_name] = (actual_x, actual_y)
                 self.current_point_idx += 1
-                print(f"Placed {current_name} at ({actual_x}, {actual_y})")
-                self.draw_display()
+                print(f"✓ Placed {current_name} at ({actual_x}, {actual_y})")
+            else:
+                # 모든 포인트 배치 완료: 가장 가까운 점 이동
+                if self.current_points:
+                    closest_name = None
+                    min_dist = float('inf')
+                    
+                    # 가장 가까운 포인트 찾기
+                    for name, (px, py) in self.current_points.items():
+                        dist = np.sqrt((px - actual_x)**2 + (py - actual_y)**2)
+                        if dist < min_dist:
+                            min_dist = dist
+                            closest_name = name
+                    
+                    if closest_name:
+                        old_pos = self.current_points[closest_name]
+                        self.current_points[closest_name] = (actual_x, actual_y)
+                        print(f"↔ Moved {closest_name} from {old_pos} to ({actual_x}, {actual_y}) (distance: {min_dist:.1f}px)")
+            
+            self.draw_display()
         
         elif event == cv2.EVENT_RBUTTONDOWN:
             # 우클릭: 마지막 포인트 제거
@@ -241,7 +261,7 @@ class WeldingLabeler:
                 last_name = list(self.current_points.keys())[-1]
                 del self.current_points[last_name]
                 self.current_point_idx = len(self.current_points)
-                print(f"Removed {last_name}")
+                print(f"✗ Removed {last_name}")
                 self.draw_display()
     
     def save_current_labels(self):
@@ -266,7 +286,7 @@ class WeldingLabeler:
             "coordinates": coords
         }
         
-        print(f"Saved labels for {img_name}")
+        print(f"💾 Saved labels for {img_name}")
     
     def next_image(self):
         """다음 이미지로"""
@@ -278,7 +298,7 @@ class WeldingLabeler:
             self.load_current_image()
             self.draw_display()
         else:
-            print("Last image reached!")
+            print("🏁 Last image reached!")
     
     def prev_image(self):
         """이전 이미지로"""
@@ -292,7 +312,7 @@ class WeldingLabeler:
         self.current_points = {}
         self.current_point_idx = 0
         self.draw_display()
-        print("Reset current image")
+        print("🔄 Reset current image")
     
     def zoom_in(self):
         """줌 인"""
@@ -322,7 +342,7 @@ class WeldingLabeler:
         self.draw_display()
         
         print("\n" + "="*60)
-        print("Welding Line Labeling Tool")
+        print("Welding Line Labeling Tool (Improved)")
         print("="*60)
         for line in self.help_text:
             print(line)
@@ -333,7 +353,7 @@ class WeldingLabeler:
             key = cv2.waitKey(1) & 0xFF
             
             if key == ord('q') or key == 27:  # Q or ESC
-                print("Quitting...")
+                print("👋 Quitting...")
                 self.save_labels()
                 break
             

@@ -1,0 +1,20 @@
+{
+  "total_images": 100,
+  "evaluated": 100,
+  "failed": 0,
+  "seed": 42,
+  "parameters": {
+    "edgeThresh1": -3.0,
+    "simThresh1": 0.98,
+    "pixelRatio1": 0.05,
+    "edgeThresh2": 1.0,
+    "simThresh2": 0.75,
+    "pixelRatio2": 0.05
+  },
+  "scores": {
+    "mean": 0.0,
+    "std": 0.0,
+    "min": 0.0,
+    "max": 0.0
+  }
+}

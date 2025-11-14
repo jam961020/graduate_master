@@ -1,0 +1,16 @@
+{
+  "iteration": 34,
+  "image_name": "WIN_20250604_14_01_48_Pro",
+  "image_idx": 0,
+  "parameters": {
+    "edgeThresh1": -3.0,
+    "simThresh1": 0.98,
+    "pixelRatio1": 0.05,
+    "edgeThresh2": 1.0,
+    "simThresh2": 0.75,
+    "pixelRatio2": 0.05
+  },
+  "score": 0.0,
+  "acq_function": "Random",
+  "acq_value": 0.0
+}

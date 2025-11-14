@@ -19,7 +19,13 @@
       "WebFetch(domain:ar5iv.labs.arxiv.org)",
       "Bash(conda activate:*)",
       "Bash(/c/ProgramData/anaconda3/condabin/conda.bat --version)",
-      "Bash(/c/Users/user/.conda/envs/weld2024_mk2/python.exe:*)"
+      "Bash(/c/Users/user/.conda/envs/weld2024_mk2/python.exe:*)",
+      "Bash(test -f:*)",
+      "Bash(pkill:*)",
+      "Bash(for:*)",
+      "Bash(do jq -r '.iteration, .cvar' /c/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization/logs/run_20251114_044828/iter_$i.json)",
+      "Bash(paste:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
