@@ -69,10 +69,17 @@ def line_equation_evaluation(detected_coords, gt_coords, image_size=(640, 480),
         score: float [0, 1]
     """
     line_definitions = [
+        # 세로선 2개
         ('longi_left', 'longi_left_lower_x', 'longi_left_lower_y',
                       'longi_left_upper_x', 'longi_left_upper_y'),
         ('longi_right', 'longi_right_lower_x', 'longi_right_lower_y',
                        'longi_right_upper_x', 'longi_right_upper_y'),
+        # 가로선 2개 (collar 있을 때)
+        ('fillet_left', 'longi_left_lower_x', 'longi_left_lower_y',
+                       'collar_left_lower_x', 'collar_left_lower_y'),
+        ('fillet_right', 'collar_left_lower_x', 'collar_left_lower_y',
+                        'longi_right_lower_x', 'longi_right_lower_y'),
+        # Collar 세로선
         ('collar_left', 'collar_left_lower_x', 'collar_left_lower_y',
                        'collar_left_upper_x', 'collar_left_upper_y')
     ]
