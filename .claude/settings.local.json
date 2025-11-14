@@ -25,7 +25,9 @@
       "Bash(for:*)",
       "Bash(do jq -r '.iteration, .cvar' /c/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization/logs/run_20251114_044828/iter_$i.json)",
       "Bash(paste:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(do echo \"=== Iter $i ===\")",
+      "Bash(jq:*)"
     ],
     "deny": [],
     "ask": []
