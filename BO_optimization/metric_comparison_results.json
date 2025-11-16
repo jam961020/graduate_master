@@ -1,0 +1,32 @@
+[
+  {
+    "case": "Best",
+    "iteration": 64,
+    "image_name": "WIN_20250717_14_50_07_Pro_welding_debug",
+    "scores": {
+      "line_eq": 0.9054129659809481,
+      "lp": 1.0,
+      "endpoint": 0.9800330584421151
+    }
+  },
+  {
+    "case": "Median",
+    "iteration": 115,
+    "image_name": "WIN_20250717_14_42_23_Pro_welding_debug",
+    "scores": {
+      "line_eq": 0.6698026948399566,
+      "lp": 1.0,
+      "endpoint": 0.9586097593099514
+    }
+  },
+  {
+    "case": "Worst",
+    "iteration": 28,
+    "image_name": "WIN_20250717_14_57_15_Pro_welding_debug",
+    "scores": {
+      "line_eq": 0.44504865132369814,
+      "lp": 0.84,
+      "endpoint": 0.4252665811433886
+    }
+  }
+]

@@ -1,0 +1,54 @@
+{
+  "n_images": 56,
+  "n_evaluations": 150,
+  "correlations": {
+    "local_contrast": {
+      "pearson_r": -0.4451931347352086,
+      "pearson_p": 0.0005858896622184097,
+      "spearman_r": -0.41886534518113466,
+      "spearman_p": 0.0013138482808436503
+    },
+    "clip_rough": {
+      "pearson_r": 0.2718302107271745,
+      "pearson_p": 0.04269843107352667,
+      "spearman_r": 0.2446803099182438,
+      "spearman_p": 0.06914713603984264
+    },
+    "brightness": {
+      "pearson_r": 0.04267439065634257,
+      "pearson_p": 0.7548235241197774,
+      "spearman_r": 0.02406015037593985,
+      "spearman_p": 0.8602827965558348
+    },
+    "clip_smooth": {
+      "pearson_r": 0.22093021143559838,
+      "pearson_p": 0.10177874484619892,
+      "spearman_r": 0.1596650168593831,
+      "spearman_p": 0.239821152158573
+    },
+    "gradient_strength": {
+      "pearson_r": -0.303971904860764,
+      "pearson_p": 0.022750431712467892,
+      "spearman_r": -0.3380724538619275,
+      "spearman_p": 0.010823051667841312
+    },
+    "edge_density": {
+      "pearson_r": 0.044551042446722394,
+      "pearson_p": 0.744400129858197,
+      "spearman_r": 0.022829801777170197,
+      "spearman_p": 0.8673613557853632
+    }
+  },
+  "strong_features": [
+    "local_contrast",
+    "gradient_strength"
+  ],
+  "moderate_features": [
+    "clip_rough",
+    "clip_smooth"
+  ],
+  "weak_features": [
+    "brightness",
+    "edge_density"
+  ]
+}

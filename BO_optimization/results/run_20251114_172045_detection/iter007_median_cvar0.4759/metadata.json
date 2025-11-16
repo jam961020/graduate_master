@@ -1,0 +1,44 @@
+{
+  "iteration": 7,
+  "cvar": 0.47585066073333177,
+  "score": 0.5871992305371208,
+  "image_name": "WIN_20250717_14_50_17_Pro_welding_debug.png",
+  "parameters": {
+    "edgeThresh1": 1.6723151133696383,
+    "simThresh1": 0.5820556838189219,
+    "pixelRatio1": 0.02245260644858734,
+    "edgeThresh2": -18.402877080305355,
+    "simThresh2": 0.9229850139142624,
+    "pixelRatio2": 0.10926651565091348,
+    "ransac_weight_q": 5.133176060350054,
+    "ransac_weight_qg": 13.79442529241084
+  },
+  "gt_coords": {
+    "longi_left_lower_x": 1037,
+    "longi_left_lower_y": 909,
+    "longi_right_lower_x": 2236,
+    "longi_right_lower_y": 908,
+    "longi_left_upper_x": 1001,
+    "longi_left_upper_y": 342,
+    "longi_right_upper_x": 2264,
+    "longi_right_upper_y": 335,
+    "collar_left_lower_x": 1316,
+    "collar_left_lower_y": 912,
+    "collar_left_upper_x": 1303,
+    "collar_left_upper_y": 339
+  },
+  "detected_coords": {
+    "longi_left_lower_x": 1031,
+    "longi_left_lower_y": 912,
+    "longi_right_lower_x": 2233,
+    "longi_right_lower_y": 910,
+    "longi_left_upper_x": 1001,
+    "longi_left_upper_y": 336,
+    "longi_right_upper_x": 2259,
+    "longi_right_upper_y": 336,
+    "collar_left_lower_x": 1316,
+    "collar_left_lower_y": 907,
+    "collar_left_upper_x": 1294,
+    "collar_left_upper_y": 335
+  }
+}
