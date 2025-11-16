@@ -20,84 +20,104 @@ GT_LABELS = load_ground_truth()
 
 def evaluate_lp(detected_coords, image, image_name=None, threshold=50.0, debug=False):
     """
-    [수정] LP 기반 평가 - threshold 상향 조정
-    
+    AirLine 논문의 LP_r (Line Precision) 구현
+
+    Reference: "AirLine: Efficient Learnable Line Detection with Local Edge Voting" (IROS 2023)
+
+    LP_r = Σ(τ_r(X) ⊗ Y) / ΣY
+
+    where:
+        - X: detected lines (검출된 선)
+        - Y: ground truth pixels (GT 선의 픽셀들)
+        - τ_r: dilation function with tolerance radius r
+        - ⊗: element-wise multiplication (overlap)
+
+    의미: GT 픽셀 중 검출된 선으로부터 r 픽셀 이내에 있는 비율 (Recall)
+
     Args:
-        threshold: 픽셀 거리 임계값 (기본 50 픽셀)
-                   5픽셀은 너무 엄격 → 50픽셀로 완화
+        detected_coords: 검출된 좌표 딕셔너리
+        image: 이미지 (사용 안 함, 호환성 유지)
+        image_name: 이미지 이름
+        threshold: tolerance radius r (픽셀 단위, 기본 50)
+        debug: 디버그 출력 여부
+
+    Returns:
+        LP_r score (0~1): GT coverage ratio
+
+    Note:
+        - "Line Precision"이라는 이름이지만 실제로는 Recall 측정
+        - RANSAC 후 단일 선만 남으므로 over-detection 문제 최소화
+        - Precision/F1은 사용하지 않음 (논문 원본 그대로)
     """
     if image_name is None:
         return 0.0
-    
+
     # 증강 이미지 이름 처리
     base_name = image_name.split('_aug')[0]
-    
+
     if base_name not in GT_LABELS:
         if debug:
             print(f"[WARN] No GT for {image_name} (base: {base_name})")
         return 0.0
-    
+
     gt_coords = GT_LABELS[base_name].get("coordinates", GT_LABELS[base_name])
-    
+
     # GT와 검출 결과에서 실제로 존재하는 선들만 추출
     gt_lines = extract_lines_from_coords(gt_coords)
     detected_lines = extract_lines_from_coords(detected_coords)
-    
+
     if len(gt_lines) == 0:
         if debug:
             print(f"[WARN] No GT lines for {image_name}")
         return 0.0
-    
+
     if len(detected_lines) == 0:
         if debug:
             print(f"[WARN] No detected lines for {image_name}")
         return 0.0
-    
-    # GT 선 위의 픽셀들 생성
+
+    # GT 선들을 픽셀로 샘플링
     gt_pixels = []
     for line in gt_lines:
         pixels = sample_line_pixels(line, num_samples=100)
         gt_pixels.extend(pixels)
-    
+
     gt_pixels = np.array(gt_pixels)
-    
-    # 검출된 선들도 픽셀로 변환
+
+    # 검출된 선들을 픽셀로 샘플링
     detected_pixels = []
     for line in detected_lines:
         pixels = sample_line_pixels(line, num_samples=100)
         detected_pixels.extend(pixels)
-    
+
     detected_pixels = np.array(detected_pixels)
-    
+
     if len(detected_pixels) == 0:
         if debug:
             print(f"[WARN] No detected pixels for {image_name}")
         return 0.0
-    
-    # LP 계산
+
+    # LP_r 계산: GT 픽셀 → 검출된 픽셀까지의 최소 거리
     from scipy.spatial.distance import cdist
-    
+
+    # distances[i, j] = GT 픽셀 i와 검출 픽셀 j 사이의 거리
     distances = cdist(gt_pixels, detected_pixels)
+
+    # 각 GT 픽셀에서 가장 가까운 검출 픽셀까지의 거리
     min_distances = distances.min(axis=1)
-    
-    tp_count = np.sum(min_distances <= threshold)
-    
-    # Precision & Recall
-    precision = tp_count / len(detected_pixels) if len(detected_pixels) > 0 else 0.0
-    recall = tp_count / len(gt_pixels) if len(gt_pixels) > 0 else 0.0
-    
-    # F1 Score
-    if precision + recall > 0:
-        f1 = 2 * (precision * recall) / (precision + recall)
-    else:
-        f1 = 0.0
-    
+
+    # τ_r(X) ⊗ Y: threshold r 이내에 있는 GT 픽셀 개수
+    covered_gt_pixels = np.sum(min_distances <= threshold)
+
+    # LP_r = covered GT pixels / total GT pixels
+    lp_r = covered_gt_pixels / len(gt_pixels)
+
     if debug:
-        print(f"  {image_name}: P={precision:.3f}, R={recall:.3f}, F1={f1:.3f}")
-        print(f"    GT pixels: {len(gt_pixels)}, Detected: {len(detected_pixels)}")
-        print(f"    TP: {tp_count}, Threshold: {threshold}")
-    
-    return f1
+        print(f"  {image_name}: LP_{int(threshold)}={lp_r:.4f} ({covered_gt_pixels}/{len(gt_pixels)} GT pixels)")
+        print(f"    GT lines: {len(gt_lines)}, Detected lines: {len(detected_lines)}")
+        print(f"    GT pixels: {len(gt_pixels)}, Detected pixels: {len(detected_pixels)}")
+
+    return lp_r
 
 
 def evaluate_endpoint_error(detected_coords, image, image_name=None, debug=False):
@@ -218,17 +238,19 @@ def sample_line_pixels(line, num_samples=100):
     return pixels
 
 
-def evaluate_quality(detected_coords, image, image_name=None, metric="lp", debug=False):
+def evaluate_quality(detected_coords, image, image_name=None, metric="lp", threshold=20.0, debug=False):
     """
     통합 평가 함수
-    
+
     Args:
         metric: "lp" or "endpoint"
+        threshold: tolerance radius for lp metric (default: 20.0 pixels)
         debug: 디버그 출력 여부
     """
     if metric == "lp":
-        # threshold를 5픽셀로 상향 조정
-        return evaluate_lp(detected_coords, image, image_name, threshold=5.0, debug=debug)
+        # AirLine 논문 원본 LP_r 사용
+        # threshold=20: 적당한 tolerance (이미지 해상도 2448×3264 고려)
+        return evaluate_lp(detected_coords, image, image_name, threshold=threshold, debug=debug)
     elif metric == "endpoint":
         return evaluate_endpoint_error(detected_coords, image, image_name, debug=debug)
     else:
