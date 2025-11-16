@@ -27,7 +27,9 @@
       "Bash(paste:*)",
       "Bash(done)",
       "Bash(do echo \"=== Iter $i ===\")",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "Bash(xargs cat:*)",
+      "Bash(bash:*)"
     ],
     "deny": [],
     "ask": []

@@ -6,12 +6,12 @@ cd /c/Users/user/Desktop/study/task/graduate/graduate_master/BO_optimization
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOGFILE="logs/overnight_lpr_original_${TIMESTAMP}.log"
 
-echo "Starting overnight experiment with original LP_r metric..."
+echo "Starting overnight experiment with original LP_r metric (STRICT threshold)..."
 echo "Iterations: 100"
 echo "n_initial: 10"
 echo "alpha: 0.3"
 echo "n_w: 15"
-echo "threshold: 20px (default in evaluate_quality)"
+echo "threshold: 10px (STRICT - improved discrimination)"
 echo "Log file: $LOGFILE"
 echo ""
 

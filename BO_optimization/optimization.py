@@ -398,9 +398,9 @@ def evaluate_single(X, image_data, yolo_detector):
 
         detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
 
-        # Metric: lp (threshold 30px로 엄격화)
+        # Metric: lp (threshold 10px로 엄격화)
         from evaluation import evaluate_lp
-        score = evaluate_lp(detected_coords, image, image_data.get('name'), threshold=20.0, debug=False)
+        score = evaluate_lp(detected_coords, image, image_data.get('name'), threshold=10.0, debug=False)
 
         # 메모리 명시적 해제 (메모리 누수 방지)
         del detected_coords, params, ransac_weights
@@ -455,9 +455,9 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
 
             detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
 
-            # Metric: lp (threshold 30px로 엄격화)
+            # Metric: lp (threshold 10px로 엄격화)
             from evaluation import evaluate_lp
-            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=20.0, debug=False)
+            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=10.0, debug=False)
             scores.append(score)
             print(f"score={score:.4f}")
 
@@ -602,9 +602,9 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
 
             detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
 
-            # Metric: lp (threshold 30px로 엄격화)
+            # Metric: lp (threshold 10px로 엄격화)
             from evaluation import evaluate_lp
-            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=20.0, debug=False)
+            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=10.0, debug=False)
             scores.append(score)
 
         except KeyboardInterrupt:
