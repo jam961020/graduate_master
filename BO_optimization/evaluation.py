@@ -7,7 +7,7 @@ import cv2
 from pathlib import Path
 
 # Ground Truth 로드
-GT_FILE = Path(__file__).parent.parent / "dataset" / "ground_truth.json"
+GT_FILE = Path(__file__).parent.parent / "dataset" / "ground_truth_merged.json"
 
 def load_ground_truth():
     if GT_FILE.exists():
@@ -18,7 +18,7 @@ def load_ground_truth():
 GT_LABELS = load_ground_truth()
 
 
-def evaluate_lp(detected_coords, image, image_name=None, threshold=50.0, debug=False):
+def evaluate_lp(detected_coords, image, image_name=None, threshold=30.0, debug=False):
     """
     AirLine 논문의 LP_r (Line Precision) 구현
 
@@ -106,16 +106,21 @@ def evaluate_lp(detected_coords, image, image_name=None, threshold=50.0, debug=F
     # 각 GT 픽셀에서 가장 가까운 검출 픽셀까지의 거리
     min_distances = distances.min(axis=1)
 
-    # τ_r(X) ⊗ Y: threshold r 이내에 있는 GT 픽셀 개수
-    covered_gt_pixels = np.sum(min_distances <= threshold)
+    # 연속 점수: 거리 0 → 1.0, threshold → 0.0, 초과 → 0.0 (선형 감쇠)
+    # 이전: 이진 평가 (threshold 이내만 1, 초과는 0)
+    # 현재: 거리 비례 점수 (더 부드러운 gradient, BO 최적화에 유리)
+    pixel_scores = np.clip(1.0 - min_distances / threshold, 0.0, 1.0)
 
-    # LP_r = covered GT pixels / total GT pixels
-    lp_r = covered_gt_pixels / len(gt_pixels)
+    # LP_r = 모든 GT 픽셀의 평균 점수
+    lp_r = pixel_scores.mean()
 
     if debug:
-        print(f"  {image_name}: LP_{int(threshold)}={lp_r:.4f} ({covered_gt_pixels}/{len(gt_pixels)} GT pixels)")
+        # 통계 정보: threshold 이내 픽셀 수도 같이 표시
+        covered_count = np.sum(min_distances <= threshold)
+        print(f"  {image_name}: LP_{int(threshold)}={lp_r:.4f} (avg score, {covered_count}/{len(gt_pixels)} within threshold)")
         print(f"    GT lines: {len(gt_lines)}, Detected lines: {len(detected_lines)}")
         print(f"    GT pixels: {len(gt_pixels)}, Detected pixels: {len(detected_pixels)}")
+        print(f"    Distance stats: min={min_distances.min():.1f}, mean={min_distances.mean():.1f}, max={min_distances.max():.1f}")
 
     return lp_r
 

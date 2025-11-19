@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from full_pipeline import detect_with_full_pipeline
 from yolo_detector import YOLODetector
 from environment_independent import extract_parameter_independent_environment
+from debug_visualizer import save_detection_debug, get_yolo_rois
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DTYPE = torch.double
@@ -310,7 +311,23 @@ def extract_all_environments(images_data, env_file="environment_top6.json"):
     env_features = torch.tensor(all_env, dtype=DTYPE, device=DEVICE)
     print(f"[BoRisk] Environment features shape: {env_features.shape} (6D: Top 6 features)")
 
-    return env_features
+    # ===== CRITICAL: Normalize environment features to [0, 1] =====
+    # GP requires all inputs in similar scale
+    env_min = env_features.min(dim=0)[0]
+    env_max = env_features.max(dim=0)[0]
+    env_range = env_max - env_min
+
+    # Avoid division by zero
+    env_range = torch.where(env_range < 1e-6, torch.ones_like(env_range), env_range)
+
+    # Normalize to [0, 1]
+    env_features_normalized = (env_features - env_min) / env_range
+
+    print(f"[BoRisk] Environment features normalized to [0, 1]")
+    print(f"  Original range: min={env_min.cpu().numpy()}, max={env_max.cpu().numpy()}")
+    print(f"  Normalized range: min={env_features_normalized.min():.4f}, max={env_features_normalized.max():.4f}")
+
+    return env_features_normalized
 
 
 def sample_w_set(env_features, n_w=15, seed=None):
@@ -368,7 +385,7 @@ def sample_w_set(env_features, n_w=15, seed=None):
     return w_set, w_indices
 
 
-def evaluate_single(X, image_data, yolo_detector):
+def evaluate_single(X, image_data, yolo_detector, iteration=None, save_dir=None):
     """
     단일 (x, w) 쌍만 평가 (진짜 BoRisk!)
 
@@ -376,6 +393,8 @@ def evaluate_single(X, image_data, yolo_detector):
         X: [1, 8] 파라미터
         image_data: 단일 이미지 데이터 dict {'image': ..., 'gt_coords': ...}
         yolo_detector: YOLO 검출기
+        iteration: 현재 iteration (디버그 시각화용)
+        save_dir: 로그 저장 디렉토리 (디버그 시각화용)
 
     Returns:
         score: scalar tensor [1]
@@ -396,11 +415,27 @@ def evaluate_single(X, image_data, yolo_detector):
         image = image_data['image']
         gt_coords = image_data['gt_coords']
 
+        # YOLO ROI 먼저 획득 (디버그용)
+        yolo_rois = get_yolo_rois(image, yolo_detector) if save_dir else None
+
         detected_coords = detect_with_full_pipeline(image, params, yolo_detector, ransac_weights)
 
         # Metric: lp (threshold 10px로 엄격화)
         from evaluation import evaluate_lp
-        score = evaluate_lp(detected_coords, image, image_data.get('name'), threshold=10.0, debug=False)
+        score = evaluate_lp(detected_coords, image, image_data.get('name'), threshold=30.0, debug=False)
+
+        # 디버그 시각화 저장 (모든 iteration)
+        if save_dir and iteration is not None:
+            save_detection_debug(
+                image=image,
+                detected_coords=detected_coords,
+                gt_coords=gt_coords,
+                image_name=image_data.get('name', 'unknown'),
+                iteration=iteration,
+                score=score,
+                save_dir=save_dir,
+                yolo_rois=yolo_rois
+            )
 
         # 메모리 명시적 해제 (메모리 누수 방지)
         del detected_coords, params, ransac_weights
@@ -457,7 +492,7 @@ def evaluate_on_w_set(X, images_data, yolo_detector, w_indices):
 
             # Metric: lp (threshold 10px로 엄격화)
             from evaluation import evaluate_lp
-            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=10.0, debug=False)
+            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=30.0, debug=False)
             scores.append(score)
             print(f"score={score:.4f}")
 
@@ -604,7 +639,7 @@ def objective_function(X, images_data, yolo_detector, alpha=0.3, verbose=False):
 
             # Metric: lp (threshold 10px로 엄격화)
             from evaluation import evaluate_lp
-            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=10.0, debug=False)
+            score = evaluate_lp(detected_coords, image, img_data.get('name'), threshold=30.0, debug=False)
             scores.append(score)
 
         except KeyboardInterrupt:
@@ -679,7 +714,7 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 print(f"  Resuming from iteration {start_iteration + 1}")
 
                 # Skip initialization
-                train_X_params = train_X_full[:, :9]  # Extract param part
+                train_X_params = train_X_full[:, :8]  # Extract param part (8D: 6 AirLine + 2 RANSAC)
             else:
                 print(f"\n⚠️ Warning: No checkpoint found in {resume_from}")
                 print(f"  Starting from scratch...\n")
@@ -750,18 +785,29 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         train_X_full,         # [N*n_w, 15] (x,w) concat
         train_Y_normalized    # [N*n_w, 1] 정규화된 Y
     )
+
+    # ===== CRITICAL: Set noise constraint to prevent overfitting =====
+    # Increase minimum noise level to improve GP stability
+    from gpytorch.constraints import Interval
+    gp.likelihood.noise_covar.register_constraint("raw_noise", Interval(1e-3, 0.1))
+
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
     fit_gpytorch_mll(mll)
-    print(f"  GP noise level: {gp.likelihood.noise.item():.6f}")
+    print(f"  GP noise level: {gp.likelihood.noise.item():.6f} (constraint: [0.001, 0.1])")
 
     # Best CVaR 추적 (각 x에 대해)
-    best_cvar_history = []
-    for i in range(n_initial):
-        start_idx = i * n_w
-        end_idx = start_idx + n_w
-        cvar = compute_cvar_from_scores(train_Y[start_idx:end_idx].squeeze(), alpha)
-        best_cvar_history.append(cvar)
-    print(f"  Initial best CVaR: {max(best_cvar_history):.4f}")
+    if not resume_from:
+        best_cvar_history = []
+        for i in range(n_initial):
+            start_idx = i * n_w
+            end_idx = start_idx + n_w
+            cvar = compute_cvar_from_scores(train_Y[start_idx:end_idx].squeeze(), alpha)
+            best_cvar_history.append(cvar)
+        print(f"  Initial best CVaR: {max(best_cvar_history):.4f}")
+    else:
+        # Resume: best_cvar_history는 checkpoint에서 로드됨
+        if best_cvar_history:
+            print(f"  Resumed best CVaR: {max(best_cvar_history):.4f}")
 
     # 로그 디렉토리 생성 (resume인 경우 기존 디렉토리 사용)
     import datetime
@@ -841,7 +887,8 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         selected_image_idx_val = selected_image_idx.item() if torch.is_tensor(selected_image_idx) else selected_image_idx
         print(f"  Evaluating SINGLE (x, w) pair: image_idx={selected_image_idx_val}...")
 
-        new_score = evaluate_single(candidate, images_data[selected_image_idx_val], yolo_detector)
+        new_score = evaluate_single(candidate, images_data[selected_image_idx_val], yolo_detector,
+                                   iteration=iteration+1, save_dir=log_dir)
         print(f"  Score: {new_score.item():.4f}")
 
         # Shape 맞추기: [1] -> [1, 1]
@@ -869,6 +916,11 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 train_X_full,
                 train_Y_normalized
             )
+
+            # Set noise constraint
+            from gpytorch.constraints import Interval
+            gp.likelihood.noise_covar.register_constraint("raw_noise", Interval(1e-3, 0.1))
+
             mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
             fit_gpytorch_mll(mll)
 
@@ -886,6 +938,11 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
                 train_X_full,
                 train_Y_normalized
             )
+
+            # Set noise constraint
+            from gpytorch.constraints import Interval
+            gp.likelihood.noise_covar.register_constraint("raw_noise", Interval(1e-3, 0.1))
+
             mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
             fit_gpytorch_mll(mll)
 
@@ -895,12 +952,15 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
         # 현재까지의 best x의 CVaR을 추적해야 함!
 
         with torch.no_grad():
+            # CVaR 계산용 고정 w_set (안정성을 위해)
+            w_set_fixed, _ = sample_w_set(all_env_features, n_w=n_w, seed=42)
+
             # 현재까지 평가한 모든 x에 대해 CVaR 계산 → best 선택
             all_cvars = []
             for x_param in train_X_params:
                 # 각 x에 대해 모든 환경 w에서 GP 예측
                 x_expanded = x_param.unsqueeze(0).expand(n_w, -1)  # [n_w, 9]
-                xw_all_envs = torch.cat([x_expanded, w_set], dim=-1)  # [n_w, 15]
+                xw_all_envs = torch.cat([x_expanded, w_set_fixed], dim=-1)  # [n_w, 15]
 
                 # GP posterior 예측 (정규화된 값)
                 posterior = gp.posterior(xw_all_envs)

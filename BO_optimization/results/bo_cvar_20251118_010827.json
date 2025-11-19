@@ -1,0 +1,34 @@
+{
+  "algorithm": "BoRisk",
+  "timestamp": "20251118_010827",
+  "log_dir": "logs\\run_20251118_010827",
+  "alpha": 0.3,
+  "n_w": 3,
+  "n_images": 5,
+  "n_original": 5,
+  "n_augmented": 0,
+  "iterations": 3,
+  "n_initial": 2,
+  "best_params": {
+    "edgeThresh1": 2.853812211641248,
+    "simThresh1": 0.5481074410687117,
+    "pixelRatio1": 0.09368987484362229,
+    "edgeThresh2": -20.898426558152487,
+    "simThresh2": 0.937583519348433,
+    "pixelRatio2": 0.053838741085044654,
+    "ransac_weight_q": 4.985692335906331,
+    "ransac_weight_qg": 11.58146085832662
+  },
+  "history": [
+    0.2966666666666667,
+    0.34,
+    0.6952874363466746,
+    0.6948459093759101,
+    0.7409797695757289
+  ],
+  "final_cvar": 0.7409797695757289,
+  "initial_cvar": 0.2966666666666667,
+  "improvement": 149.76795681893057,
+  "complete_only": false,
+  "n_augment": 0
+}
