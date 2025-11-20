@@ -11,8 +11,9 @@ import os
 def visualize_experiment(log_dir, save_path=None):
     """Generate 9-panel visualization"""
 
-    # Load all iteration data
+    # Load all iteration data (up to iter_086 for convergence analysis)
     files = sorted(glob.glob(f'{log_dir}/iter_*.json'))
+    files = [f for f in files if int(f.split('_')[-1].replace('.json', '')) <= 86]
 
     iterations = []
     cvars = []
@@ -225,8 +226,9 @@ def visualize_experiment(log_dir, save_path=None):
 def visualize_experiment_bo_only(log_dir, save_path=None):
     """Generate visualization with BO iterations only (no initial sampling)"""
 
-    # Load all iteration data
+    # Load all iteration data (up to iter_086 for convergence analysis)
     files = sorted(glob.glob(f'{log_dir}/iter_*.json'))
+    files = [f for f in files if int(f.split('_')[-1].replace('.json', '')) <= 86]
 
     iterations = []
     cvars = []

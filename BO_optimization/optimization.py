@@ -795,15 +795,17 @@ def optimize_risk_aware_bo(images_data, yolo_detector, metric="lp",
     fit_gpytorch_mll(mll)
     print(f"  GP noise level: {gp.likelihood.noise.item():.6f} (constraint: [0.001, 0.1])")
 
-    # Best CVaR 추적 (각 x에 대해)
+    # Best CVaR 추적 (cumulative best로 기록 - 자연스러운 수렴 그래프)
     if not resume_from:
         best_cvar_history = []
+        current_best = float('-inf')
         for i in range(n_initial):
             start_idx = i * n_w
             end_idx = start_idx + n_w
             cvar = compute_cvar_from_scores(train_Y[start_idx:end_idx].squeeze(), alpha)
-            best_cvar_history.append(cvar)
-        print(f"  Initial best CVaR: {max(best_cvar_history):.4f}")
+            current_best = max(current_best, cvar)
+            best_cvar_history.append(current_best)  # cumulative best
+        print(f"  Initial best CVaR: {best_cvar_history[-1]:.4f}")
     else:
         # Resume: best_cvar_history는 checkpoint에서 로드됨
         if best_cvar_history:
@@ -1111,12 +1113,23 @@ if __name__ == "__main__":
         print("[ERROR] 로드된 이미지가 없습니다!")
         sys.exit(1)
 
-    # 이미지 개수 제한 (빠른 테스트용)
+    # 이미지 개수 제한 (학습/검증 분리)
+    validation_data = []
     if args.max_images is not None and args.max_images < len(images_data):
         import random
         random.seed(42)
-        images_data = random.sample(images_data, args.max_images)
-        print(f"[INFO] Limited to {args.max_images} images for fast testing")
+        random.shuffle(images_data)
+        train_data = images_data[:args.max_images]
+        validation_data = images_data[args.max_images:]
+        images_data = train_data
+        print(f"[INFO] Train: {len(train_data)} images, Validation: {len(validation_data)} images")
+
+        # 검증 이미지 목록 저장
+        val_file = Path("validation_images.json")
+        val_names = [img['name'] for img in validation_data]
+        with open(val_file, 'w') as f:
+            json.dump(val_names, f, indent=2)
+        print(f"[INFO] Validation images saved to: {val_file}")
 
     # 원본과 증강 이미지 개수 출력
     n_original = sum(1 for img in images_data if not img.get('is_augmented', False))

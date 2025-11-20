@@ -18,7 +18,7 @@ def load_ground_truth():
 GT_LABELS = load_ground_truth()
 
 
-def evaluate_lp(detected_coords, image, image_name=None, threshold=30.0, debug=False):
+def evaluate_lp(detected_coords, image, image_name=None, threshold=20.0, debug=False):
     """
     AirLine 논문의 LP_r (Line Precision) 구현
 

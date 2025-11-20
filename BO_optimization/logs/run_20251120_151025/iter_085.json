@@ -1,0 +1,20 @@
+{
+  "iteration": 85,
+  "acq_function": "BoRisk-KG",
+  "acq_value": 0.173597858375405,
+  "parameters": {
+    "edgeThresh1": -16.158010340672327,
+    "simThresh1": 0.7614382389875383,
+    "pixelRatio1": 0.11143105571942793,
+    "edgeThresh2": -12.347896727270134,
+    "simThresh2": 0.967320641620323,
+    "pixelRatio2": 0.12257864021592937,
+    "ransac_weight_q": 16.184272135852517,
+    "ransac_weight_qg": 16.12532230114834
+  },
+  "cvar": 0.7744620373938982,
+  "score": 0.8941076185643546,
+  "w_idx": 14,
+  "image_idx": 502,
+  "n_w": 15
+}
